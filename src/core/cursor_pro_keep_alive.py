@@ -623,7 +623,7 @@ def main():
     
     try:
         logging.info("\n=== 初始化程序 ===")
-        # ExitCursor()
+        ExitCursor()
 
         # 提示用户选择操作模式
         print("\n请选择操作模式:")
