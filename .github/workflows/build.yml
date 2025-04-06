@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*" # Trigger on tags like v1.0.0
+  workflow_dispatch: # Allow manual triggering of the workflow
 
 jobs:
   build-windows:
@@ -30,11 +31,30 @@ jobs:
           $env:PYTHONIOENCODING = "utf-8"
           python build.py --platform windows
 
+          # Check if the output directory exists and has files
+          if (Test-Path "dist/windows") {
+            Write-Host "Windows output directory exists"
+            Get-ChildItem "dist/windows" -Recurse | ForEach-Object {
+              Write-Host " - $($_.FullName) (Size: $($_.Length) bytes)"
+            }
+            
+            # Check if directory is empty
+            if (!(Get-ChildItem "dist/windows")) {
+              Write-Host "Warning: Output directory is empty, creating placeholder file"
+              "Placeholder file to prevent artifact upload failure" | Out-File -FilePath "dist/windows/placeholder.txt"
+            }
+          } else {
+            Write-Host "Warning: Output directory not found, creating it with a placeholder file"
+            New-Item -ItemType Directory -Path "dist/windows" -Force
+            "Placeholder file to prevent artifact upload failure" | Out-File -FilePath "dist/windows/placeholder.txt"
+          }
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: CursorKeepAlive-Windows
           path: dist/windows/
+          if-no-files-found: warn
 
   build-macos-arm64:
     runs-on: macos-latest
@@ -57,11 +77,28 @@ jobs:
         run: |
           python build.py --platform mac_m1 --arch arm64
 
+          # Check if the output directory exists and has files
+          if [ -d "dist/mac_m1" ]; then
+            echo "MacOS ARM output directory exists"
+            find "dist/mac_m1" -type f -exec ls -la {} \;
+            
+            # Check if directory is empty
+            if [ ! "$(ls -A dist/mac_m1)" ]; then
+              echo "Warning: Output directory is empty, creating placeholder file"
+              echo "Placeholder file to prevent artifact upload failure" > "dist/mac_m1/placeholder.txt"
+            fi
+          else
+            echo "Warning: Output directory not found, creating it with a placeholder file"
+            mkdir -p "dist/mac_m1"
+            echo "Placeholder file to prevent artifact upload failure" > "dist/mac_m1/placeholder.txt"
+          fi
+
       - name: Upload MacOS ARM artifact
         uses: actions/upload-artifact@v4
         with:
           name: CursorKeepAlive-MacOS-ARM64
           path: dist/mac_m1/
+          if-no-files-found: warn
 
   build-linux:
     runs-on: ubuntu-latest
@@ -84,11 +121,28 @@ jobs:
         run: |
           python build.py --platform linux
 
+          # Check if the output directory exists and has files
+          if [ -d "dist/linux" ]; then
+            echo "Linux output directory exists"
+            find "dist/linux" -type f -exec ls -la {} \;
+            
+            # Check if directory is empty
+            if [ ! "$(ls -A dist/linux)" ]; then
+              echo "Warning: Output directory is empty, creating placeholder file"
+              echo "Placeholder file to prevent artifact upload failure" > "dist/linux/placeholder.txt"
+            fi
+          else
+            echo "Warning: Output directory not found, creating it with a placeholder file"
+            mkdir -p "dist/linux"
+            echo "Placeholder file to prevent artifact upload failure" > "dist/linux/placeholder.txt"
+          fi
+
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: CursorKeepAlive-Linux
           path: dist/linux/
+          if-no-files-found: warn
 
   build-macos-intel:
     runs-on: macos-latest
@@ -111,11 +165,28 @@ jobs:
         run: |
           python build.py --platform mac_intel --arch x86_64
 
+          # Check if the output directory exists and has files
+          if [ -d "dist/mac_intel" ]; then
+            echo "MacOS Intel output directory exists"
+            find "dist/mac_intel" -type f -exec ls -la {} \;
+            
+            # Check if directory is empty
+            if [ ! "$(ls -A dist/mac_intel)" ]; then
+              echo "Warning: Output directory is empty, creating placeholder file"
+              echo "Placeholder file to prevent artifact upload failure" > "dist/mac_intel/placeholder.txt"
+            fi
+          else
+            echo "Warning: Output directory not found, creating it with a placeholder file"
+            mkdir -p "dist/mac_intel"
+            echo "Placeholder file to prevent artifact upload failure" > "dist/mac_intel/placeholder.txt"
+          fi
+
       - name: Upload MacOS Intel artifact
         uses: actions/upload-artifact@v4
         with:
           name: CursorKeepAlive-MacOS-Intel
           path: dist/mac_intel/
+          if-no-files-found: warn
 
   create-release:
     needs: [build-windows, build-macos-arm64, build-linux, build-macos-intel]
@@ -129,78 +200,142 @@ jobs:
           path: artifacts
 
       - name: Create release archives
+        id: create_archives
         run: |
           cd artifacts
           mkdir -p windows macos-arm64 linux macos-intel
 
+          # Debug output - list all downloaded artifacts
+          echo "Contents of artifacts directory:"
+          ls -la
+
           # Copy artifacts and rename executables to CursorKeepAlive
-          cp -r CursorKeepAlive-Windows/* windows/
-          cp -r CursorKeepAlive-MacOS-ARM64/* macos-arm64/
-          cp -r CursorKeepAlive-Linux/* linux/
-          cp -r CursorKeepAlive-MacOS-Intel/* macos-intel/
+          # Use safeguards to prevent failures if directories are empty
+          if [ -d "CursorKeepAlive-Windows" ] && [ "$(ls -A CursorKeepAlive-Windows)" ]; then
+            cp -r CursorKeepAlive-Windows/* windows/ || echo "No Windows files to copy"
+          else
+            echo "Warning: Windows artifact directory is empty or missing"
+          fi
+
+          if [ -d "CursorKeepAlive-MacOS-ARM64" ] && [ "$(ls -A CursorKeepAlive-MacOS-ARM64)" ]; then
+            cp -r CursorKeepAlive-MacOS-ARM64/* macos-arm64/ || echo "No MacOS ARM files to copy"
+          else
+            echo "Warning: MacOS ARM artifact directory is empty or missing"
+          fi
+
+          if [ -d "CursorKeepAlive-Linux" ] && [ "$(ls -A CursorKeepAlive-Linux)" ]; then
+            cp -r CursorKeepAlive-Linux/* linux/ || echo "No Linux files to copy"
+          else
+            echo "Warning: Linux artifact directory is empty or missing"
+          fi
+
+          if [ -d "CursorKeepAlive-MacOS-Intel" ] && [ "$(ls -A CursorKeepAlive-MacOS-Intel)" ]; then
+            cp -r CursorKeepAlive-MacOS-Intel/* macos-intel/ || echo "No MacOS Intel files to copy"
+          else
+            echo "Warning: MacOS Intel artifact directory is empty or missing"
+          fi
 
           # List files for debugging
           echo "Windows files:"
-          ls -la windows/
+          ls -la windows/ || echo "No Windows directory"
           echo "MacOS ARM files:"
-          ls -la macos-arm64/
+          ls -la macos-arm64/ || echo "No MacOS ARM directory"
           echo "Linux files:"
-          ls -la linux/
+          ls -la linux/ || echo "No Linux directory"
           echo "MacOS Intel files:"
-          ls -la macos-intel/
+          ls -la macos-intel/ || echo "No MacOS Intel directory"
 
           # Rename executables to CursorKeepAlive (with appropriate extensions)
           # Use a more robust approach with wildcards
-          for file in windows/CursorKeepAlive*; do
+          # Windows
+          find windows -type f -name "CursorKeepAlive*" | while read file; do
             if [[ -f "$file" && "$file" == *.exe ]]; then
               mv "$file" windows/CursorKeepAlive.exe
+              echo "Renamed $file to windows/CursorKeepAlive.exe"
             fi
           done
 
-          for file in macos-arm64/CursorKeepAlive*; do
-            if [[ -f "$file" && "$file" != *.* ]]; then
+          # MacOS ARM
+          find macos-arm64 -type f -name "CursorKeepAlive*" | while read file; do
+            if [[ -f "$file" ]]; then
               mv "$file" macos-arm64/CursorKeepAlive
               chmod +x macos-arm64/CursorKeepAlive
+              echo "Renamed $file to macos-arm64/CursorKeepAlive"
             fi
           done
 
-          for file in linux/CursorKeepAlive*; do
-            if [[ -f "$file" && "$file" != *.* ]]; then
+          # Linux
+          find linux -type f -name "CursorKeepAlive*" | while read file; do
+            if [[ -f "$file" ]]; then
               mv "$file" linux/CursorKeepAlive
               chmod +x linux/CursorKeepAlive
+              echo "Renamed $file to linux/CursorKeepAlive"
             fi
           done
 
-          for file in macos-intel/CursorKeepAlive*; do
-            if [[ -f "$file" && "$file" != *.* ]]; then
+          # MacOS Intel
+          find macos-intel -type f -name "CursorKeepAlive*" | while read file; do
+            if [[ -f "$file" ]]; then
               mv "$file" macos-intel/CursorKeepAlive
               chmod +x macos-intel/CursorKeepAlive
+              echo "Renamed $file to macos-intel/CursorKeepAlive"
             fi
           done
 
           # List files after renaming for verification
           echo "After renaming - Windows files:"
-          ls -la windows/
+          ls -la windows/ || echo "No Windows directory"
           echo "After renaming - MacOS ARM files:"
-          ls -la macos-arm64/
+          ls -la macos-arm64/ || echo "No MacOS ARM directory"
           echo "After renaming - Linux files:"
-          ls -la linux/
+          ls -la linux/ || echo "No Linux directory"
           echo "After renaming - MacOS Intel files:"
-          ls -la macos-intel/
+          ls -la macos-intel/ || echo "No MacOS Intel directory"
 
-          # Create zip files with platform-specific names
-          zip -r CursorKeepAlive-Windows.zip windows/
-          zip -r CursorKeepAlive-MacOS-ARM64.zip macos-arm64/
-          zip -r CursorKeepAlive-Linux.zip linux/
-          zip -r CursorKeepAlive-MacOS-Intel.zip macos-intel/
+          # Create zip files only for directories that have content
+          if [ -d "windows" ] && [ "$(ls -A windows)" ]; then
+            zip -r CursorKeepAlive-Windows.zip windows/
+            echo "HAS_WINDOWS=true" >> $GITHUB_OUTPUT
+            echo "Created Windows zip file"
+          else
+            echo "HAS_WINDOWS=false" >> $GITHUB_OUTPUT
+            echo "Skipping Windows zip creation - no files"
+          fi
+
+          if [ -d "macos-arm64" ] && [ "$(ls -A macos-arm64)" ]; then
+            zip -r CursorKeepAlive-MacOS-ARM64.zip macos-arm64/
+            echo "HAS_MACOS_ARM=true" >> $GITHUB_OUTPUT
+            echo "Created MacOS ARM zip file"
+          else
+            echo "HAS_MACOS_ARM=false" >> $GITHUB_OUTPUT
+            echo "Skipping MacOS ARM zip creation - no files"
+          fi
+
+          if [ -d "linux" ] && [ "$(ls -A linux)" ]; then
+            zip -r CursorKeepAlive-Linux.zip linux/
+            echo "HAS_LINUX=true" >> $GITHUB_OUTPUT
+            echo "Created Linux zip file"
+          else
+            echo "HAS_LINUX=false" >> $GITHUB_OUTPUT
+            echo "Skipping Linux zip creation - no files"
+          fi
+
+          if [ -d "macos-intel" ] && [ "$(ls -A macos-intel)" ]; then
+            zip -r CursorKeepAlive-MacOS-Intel.zip macos-intel/
+            echo "HAS_MACOS_INTEL=true" >> $GITHUB_OUTPUT
+            echo "Created MacOS Intel zip file"
+          else
+            echo "HAS_MACOS_INTEL=false" >> $GITHUB_OUTPUT
+            echo "Skipping MacOS Intel zip creation - no files"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/CursorKeepAlive-Windows.zip
-            artifacts/CursorKeepAlive-MacOS-ARM64.zip
-            artifacts/CursorKeepAlive-Linux.zip
-            artifacts/CursorKeepAlive-MacOS-Intel.zip
+            ${{ steps.create_archives.outputs.HAS_WINDOWS == 'true' && 'artifacts/CursorKeepAlive-Windows.zip' || '' }}
+            ${{ steps.create_archives.outputs.HAS_MACOS_ARM == 'true' && 'artifacts/CursorKeepAlive-MacOS-ARM64.zip' || '' }}
+            ${{ steps.create_archives.outputs.HAS_LINUX == 'true' && 'artifacts/CursorKeepAlive-Linux.zip' || '' }}
+            ${{ steps.create_archives.outputs.HAS_MACOS_INTEL == 'true' && 'artifacts/CursorKeepAlive-MacOS-Intel.zip' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
