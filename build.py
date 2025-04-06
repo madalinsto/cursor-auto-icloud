@@ -8,6 +8,12 @@ import sys
 import shutil
 import argparse
 
+# Ensure UTF-8 encoding for console output
+if platform.system().lower() == "windows":
+    # Force UTF-8 encoding on Windows
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 # Ignore specific SyntaxWarning
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="DrissionPage")
 
@@ -94,7 +100,21 @@ class LoadingAnimation:
 
 
 def print_logo():
-    print("\033[96m" + CURSOR_LOGO + "\033[0m")
+    # Check if running on Windows
+    if platform.system().lower() == "windows":
+        # Use a simpler ASCII version for Windows
+        WINDOWS_LOGO = """
+   ______                          
+  / ____/_  __________  ____  _____
+ / /   / / / / ___/ _ \/ __ \/ ___/
+/ /___/ /_/ / /  /  __/ /_/ / /    
+\____/\__,_/_/   \___/\____/_/     
+        """
+        print("\033[96m" + WINDOWS_LOGO + "\033[0m")
+    else:
+        # Use Unicode logo for other platforms
+        print("\033[96m" + CURSOR_LOGO + "\033[0m")
+    
     print("\033[93m" + "Building Cursor Keep Alive...".center(56) + "\033[0m\n")
 
 

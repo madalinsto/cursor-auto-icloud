@@ -2,8 +2,8 @@ name: Build Executables
 
 on:
   push:
-    # tags:
-    #   - "v*" # Trigger on tags like v1.0.0
+    tags:
+      - "v*" # Trigger on tags like v1.0.0
     branches:
       - "**"
 
@@ -27,6 +27,9 @@ jobs:
 
       - name: Build Windows executable
         run: |
+          # Set PowerShell to use UTF-8 encoding
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $env:PYTHONIOENCODING = "utf-8"
           python build.py --platform windows
 
       - name: Upload Windows artifact
