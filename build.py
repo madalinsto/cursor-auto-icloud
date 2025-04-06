@@ -325,6 +325,33 @@ def build(target_platform=None, target_arch=None):
         else:
             subprocess.run(["cp", ".env.example", f"{output_dir}/.env"])
 
+    # Move the PyInstaller output to the platform-specific directory
+    simulate_progress("Moving files to output directory...", 0.5)
+    # PyInstaller typically puts files in a 'dist' folder in the root directory
+    exec_name = f"{APP_NAME}_{platform_id}" + (".exe" if platform_id == "windows" else "")
+    pyinstaller_output = os.path.join("dist", exec_name)
+    
+    if os.path.exists(pyinstaller_output):
+        # Make sure the output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+        # Copy the file to the platform-specific directory
+        if system == "windows":
+            subprocess.run(
+                ["copy", pyinstaller_output, f"{output_dir}\\{exec_name}"], shell=True
+            )
+        else:
+            subprocess.run(["cp", pyinstaller_output, f"{output_dir}/{exec_name}"])
+        print(f"Moved {exec_name} to {output_dir}")
+    else:
+        print(f"\033[91mWarning: Expected output file {pyinstaller_output} not found\033[0m")
+        # List files in the dist directory for debugging
+        print("Files in dist directory:")
+        if os.path.exists("dist"):
+            for file in os.listdir("dist"):
+                print(f" - {file}")
+        else:
+            print(" - dist directory not found")
+
     print(
         f"\n\033[92mBuild completed successfully! Output directory: {output_dir}\033[0m"
     )

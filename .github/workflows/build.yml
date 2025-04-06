@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "v*" # Trigger on tags like v1.0.0
-    branches:
-      - "**"
 
 jobs:
   build-windows:
