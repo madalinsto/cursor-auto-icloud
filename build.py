@@ -311,36 +311,36 @@ def build(target_platform=None, target_arch=None):
 
 
 def main():
-    # parser = argparse.ArgumentParser(description="Build CursorKeepAlive for different platforms.")
-    # parser.add_argument("--platform", choices=["mac_m1", "mac_intel", "universal_mac", "windows", "linux", "all"], 
-    #                   help="Target platform to build for")
-    # parser.add_argument("--arch", choices=["x86_64", "arm64", "universal2"],
-    #                   help="Target architecture (macOS only)")
+    parser = argparse.ArgumentParser(description="Build CursorKeepAlive for different platforms.")
+    parser.add_argument("--platform", choices=["mac_m1", "mac_intel", "universal_mac", "windows", "linux", "all"], 
+                      help="Target platform to build for")
+    parser.add_argument("--arch", choices=["x86_64", "arm64", "universal2"],
+                      help="Target architecture (macOS only)")
     
-    # args = parser.parse_args()
+    args = parser.parse_args()
     
-    # if args.platform == "all":
-    #     if platform.system().lower() == "darwin":
-    #         print("\033[95mBuilding for Mac M1...\033[0m")
-    #         build("mac_m1", "arm64")
+    if args.platform == "all":
+        if platform.system().lower() == "darwin":
+            print("\033[95mBuilding for Mac M1...\033[0m")
+            build("mac_m1", "arm64")
             
-    #         print("\n\033[95mBuilding for Mac Intel...\033[0m")
-    #         build("mac_intel", "x86_64")
+            print("\n\033[95mBuilding for Mac Intel...\033[0m")
+            build("mac_intel", "x86_64")
             
-    #         print("\n\033[95mBuilding Universal Mac Binary...\033[0m")
-    #         build("universal_mac", "universal2")
-    #     elif platform.system().lower() == "windows":
-    #         print("\033[95mBuilding for Windows...\033[0m")
-    #         build("windows")
-    #     elif platform.system().lower() == "linux":
-    #         print("\033[95mBuilding for Linux...\033[0m")
-    #         build("linux")
-    #     else:
-    #         print("\033[91mCan only build for all platforms when on macOS or Windows\033[0m")
-    # elif args.platform:
-    #     build(args.platform, args.arch)
-    # else:
-    build()
+            print("\n\033[95mBuilding for Universal Mac Binary...\033[0m")
+            build("universal_mac", "universal2")
+        elif platform.system().lower() == "windows":
+            print("\033[95mBuilding for Windows...\033[0m")
+            build("windows")
+        elif platform.system().lower() == "linux":
+            print("\033[95mBuilding for Linux...\033[0m")
+            build("linux")
+        else:
+            print("\033[91mCan only build for all platforms when on macOS or Windows\033[0m")
+    elif args.platform:
+        build(args.platform, args.arch)
+    else:
+        build()
 
 
 if __name__ == "__main__":
