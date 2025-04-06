@@ -8,6 +8,12 @@ import sys
 import shutil
 import argparse
 
+# Ensure UTF-8 encoding for console output
+if platform.system().lower() == "windows":
+    # Force UTF-8 encoding on Windows
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 # Ignore specific SyntaxWarning
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="DrissionPage")
 
@@ -94,7 +100,21 @@ class LoadingAnimation:
 
 
 def print_logo():
-    print("\033[96m" + CURSOR_LOGO + "\033[0m")
+    # Check if running on Windows
+    if platform.system().lower() == "windows":
+        # Use a simpler ASCII version for Windows
+        WINDOWS_LOGO = """
+   ______                          
+  / ____/_  __________  ____  _____
+ / /   / / / / ___/ _ \/ __ \/ ___/
+/ /___/ /_/ / /  /  __/ /_/ / /    
+\____/\__,_/_/   \___/\____/_/     
+        """
+        print("\033[96m" + WINDOWS_LOGO + "\033[0m")
+    else:
+        # Use Unicode logo for other platforms
+        print("\033[96m" + CURSOR_LOGO + "\033[0m")
+    
     print("\033[93m" + "Building Cursor Keep Alive...".center(56) + "\033[0m\n")
 
 
@@ -305,42 +325,69 @@ def build(target_platform=None, target_arch=None):
         else:
             subprocess.run(["cp", ".env.example", f"{output_dir}/.env"])
 
+    # Move the PyInstaller output to the platform-specific directory
+    simulate_progress("Moving files to output directory...", 0.5)
+    # PyInstaller typically puts files in a 'dist' folder in the root directory
+    exec_name = f"{APP_NAME}_{platform_id}" + (".exe" if platform_id == "windows" else "")
+    pyinstaller_output = os.path.join("dist", exec_name)
+    
+    if os.path.exists(pyinstaller_output):
+        # Make sure the output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+        # Copy the file to the platform-specific directory
+        if system == "windows":
+            subprocess.run(
+                ["copy", pyinstaller_output, f"{output_dir}\\{exec_name}"], shell=True
+            )
+        else:
+            subprocess.run(["cp", pyinstaller_output, f"{output_dir}/{exec_name}"])
+        print(f"Moved {exec_name} to {output_dir}")
+    else:
+        print(f"\033[91mWarning: Expected output file {pyinstaller_output} not found\033[0m")
+        # List files in the dist directory for debugging
+        print("Files in dist directory:")
+        if os.path.exists("dist"):
+            for file in os.listdir("dist"):
+                print(f" - {file}")
+        else:
+            print(" - dist directory not found")
+
     print(
         f"\n\033[92mBuild completed successfully! Output directory: {output_dir}\033[0m"
     )
 
 
 def main():
-    # parser = argparse.ArgumentParser(description="Build CursorKeepAlive for different platforms.")
-    # parser.add_argument("--platform", choices=["mac_m1", "mac_intel", "universal_mac", "windows", "linux", "all"], 
-    #                   help="Target platform to build for")
-    # parser.add_argument("--arch", choices=["x86_64", "arm64", "universal2"],
-    #                   help="Target architecture (macOS only)")
+    parser = argparse.ArgumentParser(description="Build CursorKeepAlive for different platforms.")
+    parser.add_argument("--platform", choices=["mac_m1", "mac_intel", "universal_mac", "windows", "linux", "all"], 
+                      help="Target platform to build for")
+    parser.add_argument("--arch", choices=["x86_64", "arm64", "universal2"],
+                      help="Target architecture (macOS only)")
     
-    # args = parser.parse_args()
+    args = parser.parse_args()
     
-    # if args.platform == "all":
-    #     if platform.system().lower() == "darwin":
-    #         print("\033[95mBuilding for Mac M1...\033[0m")
-    #         build("mac_m1", "arm64")
+    if args.platform == "all":
+        if platform.system().lower() == "darwin":
+            print("\033[95mBuilding for Mac M1...\033[0m")
+            build("mac_m1", "arm64")
             
-    #         print("\n\033[95mBuilding for Mac Intel...\033[0m")
-    #         build("mac_intel", "x86_64")
+            print("\n\033[95mBuilding for Mac Intel...\033[0m")
+            build("mac_intel", "x86_64")
             
-    #         print("\n\033[95mBuilding Universal Mac Binary...\033[0m")
-    #         build("universal_mac", "universal2")
-    #     elif platform.system().lower() == "windows":
-    #         print("\033[95mBuilding for Windows...\033[0m")
-    #         build("windows")
-    #     elif platform.system().lower() == "linux":
-    #         print("\033[95mBuilding for Linux...\033[0m")
-    #         build("linux")
-    #     else:
-    #         print("\033[91mCan only build for all platforms when on macOS or Windows\033[0m")
-    # elif args.platform:
-    #     build(args.platform, args.arch)
-    # else:
-    build()
+            print("\n\033[95mBuilding for Universal Mac Binary...\033[0m")
+            build("universal_mac", "universal2")
+        elif platform.system().lower() == "windows":
+            print("\033[95mBuilding for Windows...\033[0m")
+            build("windows")
+        elif platform.system().lower() == "linux":
+            print("\033[95mBuilding for Linux...\033[0m")
+            build("linux")
+        else:
+            print("\033[91mCan only build for all platforms when on macOS or Windows\033[0m")
+    elif args.platform:
+        build(args.platform, args.arch)
+    else:
+        build()
 
 
 if __name__ == "__main__":

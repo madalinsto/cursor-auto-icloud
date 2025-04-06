@@ -1,0 +1,206 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - "v*" # Trigger on tags like v1.0.0
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build Windows executable
+        run: |
+          # Set PowerShell to use UTF-8 encoding
+          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+          $env:PYTHONIOENCODING = "utf-8"
+          python build.py --platform windows
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CursorKeepAlive-Windows
+          path: dist/windows/
+
+  build-macos-arm64:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build MacOS ARM executable
+        run: |
+          python build.py --platform mac_m1 --arch arm64
+
+      - name: Upload MacOS ARM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CursorKeepAlive-MacOS-ARM64
+          path: dist/mac_m1/
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build Linux executable
+        run: |
+          python build.py --platform linux
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CursorKeepAlive-Linux
+          path: dist/linux/
+
+  build-macos-intel:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+
+      - name: Build MacOS Intel executable
+        run: |
+          python build.py --platform mac_intel --arch x86_64
+
+      - name: Upload MacOS Intel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CursorKeepAlive-MacOS-Intel
+          path: dist/mac_intel/
+
+  create-release:
+    needs: [build-windows, build-macos-arm64, build-linux, build-macos-intel]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release archives
+        run: |
+          cd artifacts
+          mkdir -p windows macos-arm64 linux macos-intel
+
+          # Copy artifacts and rename executables to CursorKeepAlive
+          cp -r CursorKeepAlive-Windows/* windows/
+          cp -r CursorKeepAlive-MacOS-ARM64/* macos-arm64/
+          cp -r CursorKeepAlive-Linux/* linux/
+          cp -r CursorKeepAlive-MacOS-Intel/* macos-intel/
+
+          # List files for debugging
+          echo "Windows files:"
+          ls -la windows/
+          echo "MacOS ARM files:"
+          ls -la macos-arm64/
+          echo "Linux files:"
+          ls -la linux/
+          echo "MacOS Intel files:"
+          ls -la macos-intel/
+
+          # Rename executables to CursorKeepAlive (with appropriate extensions)
+          # Use a more robust approach with wildcards
+          for file in windows/CursorKeepAlive*; do
+            if [[ -f "$file" && "$file" == *.exe ]]; then
+              mv "$file" windows/CursorKeepAlive.exe
+            fi
+          done
+
+          for file in macos-arm64/CursorKeepAlive*; do
+            if [[ -f "$file" && "$file" != *.* ]]; then
+              mv "$file" macos-arm64/CursorKeepAlive
+              chmod +x macos-arm64/CursorKeepAlive
+            fi
+          done
+
+          for file in linux/CursorKeepAlive*; do
+            if [[ -f "$file" && "$file" != *.* ]]; then
+              mv "$file" linux/CursorKeepAlive
+              chmod +x linux/CursorKeepAlive
+            fi
+          done
+
+          for file in macos-intel/CursorKeepAlive*; do
+            if [[ -f "$file" && "$file" != *.* ]]; then
+              mv "$file" macos-intel/CursorKeepAlive
+              chmod +x macos-intel/CursorKeepAlive
+            fi
+          done
+
+          # List files after renaming for verification
+          echo "After renaming - Windows files:"
+          ls -la windows/
+          echo "After renaming - MacOS ARM files:"
+          ls -la macos-arm64/
+          echo "After renaming - Linux files:"
+          ls -la linux/
+          echo "After renaming - MacOS Intel files:"
+          ls -la macos-intel/
+
+          # Create zip files with platform-specific names
+          zip -r CursorKeepAlive-Windows.zip windows/
+          zip -r CursorKeepAlive-MacOS-ARM64.zip macos-arm64/
+          zip -r CursorKeepAlive-Linux.zip linux/
+          zip -r CursorKeepAlive-MacOS-Intel.zip macos-intel/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/CursorKeepAlive-Windows.zip
+            artifacts/CursorKeepAlive-MacOS-ARM64.zip
+            artifacts/CursorKeepAlive-Linux.zip
+            artifacts/CursorKeepAlive-MacOS-Intel.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
