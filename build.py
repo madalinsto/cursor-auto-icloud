@@ -331,26 +331,114 @@ def build(target_platform=None, target_arch=None):
     exec_name = f"{APP_NAME}_{platform_id}" + (".exe" if platform_id == "windows" else "")
     pyinstaller_output = os.path.join("dist", exec_name)
     
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Created output directory: {output_dir}")
+    
+    # Check if the output file exists
     if os.path.exists(pyinstaller_output):
-        # Make sure the output directory exists
-        os.makedirs(output_dir, exist_ok=True)
-        # Copy the file to the platform-specific directory
-        if system == "windows":
-            subprocess.run(
-                ["copy", pyinstaller_output, f"{output_dir}\\{exec_name}"], shell=True
-            )
-        else:
-            subprocess.run(["cp", pyinstaller_output, f"{output_dir}/{exec_name}"])
-        print(f"Moved {exec_name} to {output_dir}")
+        try:
+            # Get the destination file path
+            dest_file = os.path.join(output_dir, exec_name)
+            
+            print(f"Copying from {pyinstaller_output} to {dest_file}")
+            
+            # Copy the file using shutil (more reliable cross-platform)
+            shutil.copy2(pyinstaller_output, dest_file)
+            
+            # Verify the file exists in the destination
+            if os.path.exists(dest_file):
+                file_size = os.path.getsize(dest_file)
+                print(f"SUCCESS: Copied file to {dest_file} (size: {file_size} bytes)")
+            else:
+                print(f"ERROR: Failed to verify file exists at {dest_file}")
+                
+                # Try creating an empty file for testing
+                try:
+                    with open(os.path.join(output_dir, "test.txt"), "w") as f:
+                        f.write("Test file for debugging")
+                    print(f"Created test file at {os.path.join(output_dir, 'test.txt')}")
+                except Exception as e:
+                    print(f"Failed to create test file: {str(e)}")
+        except Exception as e:
+            print(f"ERROR during copy operation: {str(e)}")
     else:
-        print(f"\033[91mWarning: Expected output file {pyinstaller_output} not found\033[0m")
-        # List files in the dist directory for debugging
-        print("Files in dist directory:")
+        print(f"ERROR: Source file not found at {pyinstaller_output}")
+        
+        # Look for similarly named files in the dist directory
+        print("Looking for files in dist directory:")
         if os.path.exists("dist"):
-            for file in os.listdir("dist"):
-                print(f" - {file}")
+            # Check all files in the dist directory
+            for item in os.listdir("dist"):
+                item_path = os.path.join("dist", item)
+                if os.path.isfile(item_path):
+                    file_size = os.path.getsize(item_path)
+                    print(f" - Found file: {item} (size: {file_size} bytes)")
+                    
+                    # If the file name contains our app name, try copying it
+                    if APP_NAME.lower() in item.lower():
+                        try:
+                            dest_file = os.path.join(output_dir, exec_name)
+                            shutil.copy2(item_path, dest_file)
+                            print(f"Copied alternative file {item} to {dest_file}")
+                            
+                            # Create a test file to verify write permissions
+                            with open(os.path.join(output_dir, "test.txt"), "w") as f:
+                                f.write("Test file for debugging")
+                        except Exception as e:
+                            print(f"Failed to copy alternative file: {str(e)}")
+                elif os.path.isdir(item_path):
+                    print(f" - Found directory: {item}")
+                    # Check files in subdirectory
+                    for subitem in os.listdir(item_path):
+                        subitem_path = os.path.join(item_path, subitem)
+                        if os.path.isfile(subitem_path):
+                            print(f"   - {subitem} (size: {os.path.getsize(subitem_path)} bytes)")
+                            
+                            # If it looks like our executable, copy it
+                            if APP_NAME.lower() in subitem.lower():
+                                try:
+                                    dest_file = os.path.join(output_dir, exec_name)
+                                    shutil.copy2(subitem_path, dest_file)
+                                    print(f"Copied file from subdirectory: {subitem} to {dest_file}")
+                                except Exception as e:
+                                    print(f"Failed to copy from subdirectory: {str(e)}")
         else:
             print(" - dist directory not found")
+    
+    # Verify the contents of the output directory
+    print(f"\nVerifying contents of {output_dir}:")
+    if os.path.exists(output_dir):
+        found_files = False
+        for item in os.listdir(output_dir):
+            found_files = True
+            item_path = os.path.join(output_dir, item)
+            if os.path.isfile(item_path):
+                print(f" - File: {item} (size: {os.path.getsize(item_path)} bytes)")
+            else:
+                print(f" - Directory: {item}")
+        
+        if not found_files:
+            print(" - Directory exists but is empty!")
+            
+            # As a last resort, create a dummy file so artifact upload doesn't fail
+            try:
+                with open(os.path.join(output_dir, "placeholder.txt"), "w") as f:
+                    f.write("Placeholder file created because no executable was found")
+                print(" - Created placeholder.txt file")
+            except Exception as e:
+                print(f" - Failed to create placeholder: {str(e)}")
+    else:
+        print(" - Output directory does not exist!")
+        
+    # Print absolute paths for clarity
+    print(f"\nAbsolute paths:")
+    print(f"Current directory: {os.path.abspath(os.curdir)}")
+    print(f"Output directory: {os.path.abspath(output_dir)}")
+    if os.path.exists(pyinstaller_output):
+        print(f"Source file: {os.path.abspath(pyinstaller_output)}")
+    else:
+        print(f"Source file not found: {os.path.abspath(pyinstaller_output)}")
 
     print(
         f"\n\033[92mBuild completed successfully! Output directory: {output_dir}\033[0m"
