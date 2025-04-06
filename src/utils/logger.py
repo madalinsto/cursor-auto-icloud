@@ -59,7 +59,7 @@ def initialize_logger():
     logging.getLogger().addHandler(console_handler)
 
     # 打印日志目录所在路径
-    logging.info(f"Logger initialized, log directory: {os.path.abspath(log_dir)}")
+    logging.info(f"日志记录器已初始化，日志目录: {os.path.abspath(log_dir)}")
     
     _logger_initialized = True
 

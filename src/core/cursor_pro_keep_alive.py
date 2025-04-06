@@ -2,6 +2,9 @@ import os
 import platform
 import json
 import sys
+import csv
+from pathlib import Path
+import dotenv
 
 from enum import Enum
 from typing import Optional
@@ -333,6 +336,26 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
     return True
 
 
+def get_env_directory():
+    """
+    Get the directory where the .env file is located.
+    Returns the directory path if .env exists, otherwise returns the current directory.
+    """
+    # Check common locations for .env file
+    possible_env_paths = [
+        ".env",  # Current directory
+        os.path.join(os.path.dirname(sys.executable), ".env"),  # Next to executable
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")  # Project root
+    ]
+    
+    for env_path in possible_env_paths:
+        if os.path.exists(env_path):
+            return os.path.dirname(os.path.abspath(env_path))
+    
+    # If .env is not found, return current directory
+    return os.path.abspath(".")
+
+
 class EmailGenerator:
     def __init__(
         self,
@@ -352,6 +375,12 @@ class EmailGenerator:
         self.default_last_name = self.generate_random_name()
         self.use_icloud = use_icloud
         self.generateIcloudEmail = None
+        
+        # Try to load dotenv config if exists
+        try:
+            dotenv.load_dotenv()
+        except Exception as e:
+            logging.warning(f"Failed to load .env file: {str(e)}")
         
         # Try to import iCloud email generator if use_icloud is True
         if self.use_icloud:
@@ -375,24 +404,64 @@ class EmailGenerator:
 
     def load_names(self):
         """Load names from names-dataset.txt file"""
-        # Look for the file in the project root directory
-        names_file_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            "data",
-            "names-dataset.txt"
-        )
+        # Look for the file in the executable directory first, then in the project structure
+        possible_paths = [
+            "names-dataset.txt",  # In the current/executable directory
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "data", "names-dataset.txt")  # Project structure path
+        ]
         
-        try:
-            with open(names_file_path, "r") as file:
-                return file.read().split()
-        except FileNotFoundError:
-            logging.error(f"Names dataset file not found at {names_file_path}")
-            # Return a small set of default names as fallback
-            return ["John", "Jane", "Michael", "Emma", "Robert", "Olivia"]
+        for names_file_path in possible_paths:
+            try:
+                with open(names_file_path, "r") as file:
+                    logging.info(f"名称数据集已从 {names_file_path} 加载")
+                    return file.read().split()
+            except FileNotFoundError:
+                continue
+                
+        logging.error(f"Names dataset file not found in any known location")
+        # Return a small set of default names as fallback
+        return ["John", "Jane", "Michael", "Emma", "Robert", "Olivia"]
 
     def generate_random_name(self):
         """生成随机用户名"""
         return random.choice(self.names)
+
+    def get_emails_file_path(self):
+        """Get the path to the emails.txt file, prioritizing accessible locations"""
+        # Check if EMAIL_FILE_PATH is defined in .env
+        env_path = os.environ.get("EMAIL_FILE_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+        
+        # First try to place emails.txt in the same directory as .env
+        env_dir = get_env_directory()
+        env_dir_path = os.path.join(env_dir, "emails.txt")
+        
+        # Try common locations
+        possible_paths = [
+            env_dir_path,  # Same directory as .env
+            "data/emails.txt",  # In the current/executable directory
+            os.path.join(os.path.dirname(sys.executable), "data", "emails.txt"),  # Next to executable
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                "data", "emails.txt")  # Project structure path
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+                
+        # Default to the same location as .env file
+        default_path = env_dir_path
+        try:
+            # Make sure the directory exists
+            os.makedirs(os.path.dirname(default_path), exist_ok=True)
+        except:
+            # If creating directory fails, use data directory as fallback
+            default_path = "data/emails.txt"
+            os.makedirs(os.path.dirname(default_path), exist_ok=True)
+            
+        return default_path
 
     def generate_email(self, length=4):
         """
@@ -409,33 +478,27 @@ class EmailGenerator:
             except Exception as e:
                 logging.error(f"iCloud 邮箱生成失败: {str(e)}")
                 logging.warning("将使用本地邮箱列表")
-        
+            
         # If iCloud failed or not enabled, use local email list
-        # Define the path to the emails.txt file
-        emails_file_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            "data", 
-            "emails.txt"
-        )
+        emails_file_path = self.get_emails_file_path()
+        logging.info(f"Using emails file: {emails_file_path}")
         
         # Ensure the data directory exists
-        data_dir = os.path.dirname(emails_file_path)
-        if not os.path.exists(data_dir):
-            os.makedirs(data_dir)
+        os.makedirs(os.path.dirname(emails_file_path), exist_ok=True)
         
-        # Check if emails.txt exists
-        if not os.path.exists(emails_file_path):
-            logging.warning(f"Email list file not found at {emails_file_path}. Generating random email.")
-            logging.warning("邮箱列表为空，程序执行完毕")
-            sys.exit(1)
-        
-        # Read first email and remove it from file
+        # Check if emails.txt exists and has content
         try:
+            if not os.path.exists(emails_file_path):
+                with open(emails_file_path, "w") as f:
+                    pass
+                logging.warning(f"Created empty email list file at {emails_file_path}")
+                
             with open(emails_file_path, "r") as f:
                 lines = f.readlines()
-                if len(lines) == 0:
-                    logging.warning("邮箱列表为空，程序执行完毕")
-                    sys.exit(1)
+                
+            if not lines:                    
+                logging.warning("邮箱列表为空，程序执行完毕")
+                sys.exit(1)
                     
             first_email = lines[0].strip()
             
@@ -497,6 +560,55 @@ def print_end_message():
     logging.info(
         "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
     )
+
+
+def save_account_to_csv(account_info, csv_path="accounts.csv"):
+    """
+    Save account information to a CSV file.
+    
+    Args:
+        account_info: Dictionary containing account details
+        csv_path: Path to the CSV file
+    """
+    # Check for CSV_FILE_PATH in environment variables
+    env_csv_path = os.environ.get("CSV_FILE_PATH")
+    if env_csv_path:
+        csv_path = env_csv_path
+    else:
+        # Try to save accounts.csv in the same directory as .env
+        env_dir = get_env_directory()
+        csv_path = os.path.join(env_dir, "accounts.csv")
+        
+    file_path = Path(csv_path)
+    logging.info(f"正在保存账号信息到CSV文件: {file_path}")
+    
+    # Check if file exists to determine if we need to write headers
+    file_exists = file_path.exists()
+    
+    try:
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(os.path.abspath(csv_path)), exist_ok=True)
+        
+        with open(file_path, mode='a', newline='') as file:
+            fieldnames = ['created_date', 'email', 'password', 'token', 'first_name', 'last_name']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            
+            # Write headers if file doesn't exist
+            if not file_exists:
+                writer.writeheader()
+            
+            # Add creation date to account info
+            account_info_with_date = account_info.copy()
+            account_info_with_date['created_date'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Write account info
+            writer.writerow(account_info_with_date)
+            
+        logging.info(f"账号信息已保存至 {csv_path}")
+        return True
+    except Exception as e:
+        logging.error(f"保存账号信息失败: {str(e)}")
+        return False
 
 
 def main():
@@ -625,6 +737,14 @@ def main():
             logging.info("正在获取会话令牌...")
             token = get_cursor_session_token(tab)
             if token:
+                account_info = {
+                    'email': account,
+                    'password': password,
+                    'token': token,
+                    'first_name': first_name,
+                    'last_name': last_name
+                }
+                save_account_to_csv(account_info)
                 logging.info("更新认证信息...")
                 update_cursor_auth(
                     email=account, access_token=token, refresh_token=token

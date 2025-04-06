@@ -129,12 +129,61 @@ def filter_output(output):
     return "\n".join(important_lines)
 
 
+# Define additional data files to include
+base_data_files = [
+    (DATA_FOLDER, DATA_FOLDER),
+    (ENV_FILE, "."),
+    ("src/turnstilePatch", "src/turnstilePatch"),  # Include turnstilePatch folder from src directory
+    ("src/icloud", "src/icloud"),  # Explicitly include the iCloud module directory
+    ("names-dataset.txt", "."),  # Include names dataset
+]
+
+# Ensure data files exist and are accessible
+def ensure_files_exist():
+    # Create .env file if it doesn't exist
+    if not os.path.exists(ENV_FILE) and os.path.exists(".env.example"):
+        shutil.copy(".env.example", ENV_FILE)
+        print(f"Created {ENV_FILE} from template")
+    
+    # Add .env file to data files
+    if ENV_FILE not in [src for src, _ in base_data_files]:
+        base_data_files.append((ENV_FILE, "."))
+    
+    # Create empty accounts.csv file if it doesn't exist - in same directory as .env
+    env_dir = os.path.dirname(os.path.abspath(ENV_FILE))
+    accounts_csv_path = os.path.join(env_dir, "accounts.csv")
+    if not os.path.exists(accounts_csv_path):
+        with open(accounts_csv_path, "w", newline="") as f:
+            f.write("created_date,email,password,token,first_name,last_name\n")
+        print(f"Created empty accounts.csv file at {accounts_csv_path}")
+    
+    # Add accounts.csv to data files (from same directory as .env)
+    base_data_files.append((accounts_csv_path, "."))
+    
+    # Create empty emails.txt file in same directory as .env
+    emails_file_path = os.path.join(env_dir, "emails.txt")
+    if not os.path.exists(emails_file_path):
+        with open(emails_file_path, "w") as f:
+            pass
+        print(f"Created empty emails.txt file at {emails_file_path}")
+    
+    # Add emails.txt to data files (from same directory as .env)
+    base_data_files.append((emails_file_path, "."))
+    
+    # Ensure data directory exists
+    if not os.path.exists(DATA_FOLDER):
+        os.makedirs(DATA_FOLDER, exist_ok=True)
+
+
 def build(target_platform=None, target_arch=None):
     # Clear screen
     os.system("cls" if platform.system().lower() == "windows" else "clear")
 
     # Print logo
     print_logo()
+
+    # Ensure necessary files exist
+    ensure_files_exist()
 
     # Get platform information
     system, arch, platform_id = get_platform_info()
@@ -152,15 +201,6 @@ def build(target_platform=None, target_arch=None):
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     simulate_progress("Creating output directory...", 0.5)
-
-    # Define additional data files to include
-    base_data_files = [
-        (DATA_FOLDER, DATA_FOLDER),
-        (ENV_FILE, "."),
-        ("src/turnstilePatch", "src/turnstilePatch"),  # Include turnstilePatch folder from src directory
-        ("src/icloud", "src/icloud"),  # Explicitly include the iCloud module directory
-        ("names-dataset.txt", ".")  # Include names dataset
-    ]
 
     # Get Python source files
     py_data_files = get_recursive_data_files(CODE_FOLDER, "src")
