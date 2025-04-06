@@ -89,16 +89,7 @@ class EmailVerificationHandler:
             # 连接到 iCloud IMAP 服务器
             mail = imaplib.IMAP4_SSL(icloud_config['imap_server'], icloud_config['imap_port'])
             
-            # 用户名可能需要包含完整邮箱地址
-            username = icloud_config['imap_user']
-            if '@' not in username and '@icloud.com' not in username:
-                # 尝试检查是否已经是完整的邮箱地址
-                if not username.endswith(('@icloud.com', '@me.com', '@mac.com')):
-                    # 默认添加 @icloud.com
-                    logging.info(f"使用完整邮箱地址 {username}@icloud.com 登录 iCloud IMAP")
-                    username = f"{username}@icloud.com"
-            
-            mail.login(username, icloud_config['imap_pass'])
+            mail.login(icloud_config['imap_user'], icloud_config['imap_pass'])
             mail.select(icloud_config['imap_dir'] or 'INBOX')
             
             # 获取最近的邮件
