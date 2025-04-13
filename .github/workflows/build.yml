@@ -163,7 +163,7 @@ jobs:
 
       - name: Build MacOS Intel executable
         run: |
-          python build.py --platform mac_intel --arch x86_64
+          python build.py --platform mac_intel
 
           # Check if the output directory exists and has files
           if [ -d "dist/mac_intel" ]; then

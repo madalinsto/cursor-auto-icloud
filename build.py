@@ -258,6 +258,37 @@ def build(target_platform=None, target_arch=None):
                 command.append("--target-architecture=universal2")
             elif target_arch in ["x86_64", "arm64"]:
                 command.append(f"--target-architecture={target_arch}")
+                # Set specific environment variables for Intel builds
+                if target_arch == "x86_64":
+                    os.environ["ARCHFLAGS"] = "-arch x86_64"
+                    os.environ["SYSTEM_VERSION_COMPAT"] = "1"
+                    os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"  # Ensure compatibility
+                    print("Building for Intel: Set ARCHFLAGS=-arch x86_64 and SYSTEM_VERSION_COMPAT=1")
+                    
+                    # For macOS Intel builds, let's be more explicit
+                    if platform_id == "mac_intel":
+                        # Additional options for macOS Intel
+                        command.append("--clean")  # Ensure clean build
+                        command.append("--noconfirm")  # Don't ask for confirmation
+                        # Don't use --noconsole as it might cause issues with some app types
+                        # Don't use --osx-architecture flag as it's not supported in this PyInstaller version
+    
+    # Special handling for Intel builds on Apple Silicon
+    if platform_id == "mac_intel" and arch == "arm64" and target_arch == "x86_64":
+        print("\033[93mWarning: Building Intel binary on Apple Silicon - using cross-compilation\033[0m")
+        
+        # Check if this process is running under Rosetta
+        is_rosetta = False
+        try:
+            result = subprocess.run(["sysctl", "-n", "sysctl.proc_translated"], 
+                                    capture_output=True, text=True, check=False)
+            is_rosetta = (result.stdout.strip() == "1")
+        except Exception:
+            pass
+            
+        if not is_rosetta:
+            print("\033[91mWarning: Not running under Rosetta/arch -x86_64. This may cause issues.\033[0m")
+            print("\033[91mRecommendation: Run with 'arch -x86_64 python build.py --platform mac_intel --arch x86_64'\033[0m")
     
     # Add data files
     command.extend(data_args)
@@ -331,6 +362,59 @@ def build(target_platform=None, target_arch=None):
     exec_name = f"{APP_NAME}_{platform_id}" + (".exe" if platform_id == "windows" else "")
     pyinstaller_output = os.path.join("dist", exec_name)
     
+    # For macOS Intel builds, PyInstaller might use a different naming convention
+    if platform_id == "mac_intel":
+        # Try alternative output names that might be generated for Intel builds
+        alt_names = [
+            os.path.join("dist", exec_name),  # Standard name
+            os.path.join("dist", f"{APP_NAME}"),  # Base name without suffix
+            os.path.join("dist", f"{APP_NAME}_macos"),  # Generic macOS name
+            os.path.join("dist", f"{APP_NAME}_darwin"),  # Darwin name
+            os.path.join("dist", f"{APP_NAME}_mac"),  # Shortened mac name
+            os.path.join("dist", "mac_intel", f"{APP_NAME}"),  # In platform subfolder
+            os.path.join("dist", "mac_intel", exec_name),  # In platform subfolder with platform id
+        ]
+        
+        # Find the first file that exists
+        found_alt_name = False
+        for alt_name in alt_names:
+            if os.path.exists(alt_name):
+                pyinstaller_output = alt_name
+                print(f"Found Intel executable at alternative path: {alt_name}")
+                found_alt_name = True
+                break
+                
+        # If still not found, search for any executable in the dist directory
+        if not found_alt_name:
+            print("Searching for any executable in dist directory...")
+            if os.path.exists("dist"):
+                for root, dirs, files in os.walk("dist"):
+                    for file in files:
+                        # Skip known non-executable extensions
+                        if file.endswith((".py", ".pyc", ".pyo", ".spec", ".txt", ".log")):
+                            continue
+                            
+                        file_path = os.path.join(root, file)
+                        # Check if it's an executable (UNIX only)
+                        is_executable = False
+                        try:
+                            if system != "windows":
+                                is_executable = os.access(file_path, os.X_OK)
+                            else:
+                                # For Windows, check extension
+                                is_executable = file.endswith(".exe")
+                        except:
+                            pass
+                            
+                        # If it's executable or contains APP_NAME, try it
+                        if is_executable or APP_NAME.lower() in file.lower():
+                            print(f"Found potential executable: {file_path}")
+                            pyinstaller_output = file_path
+                            found_alt_name = True
+                            break
+                    if found_alt_name:
+                        break
+
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     print(f"Created output directory: {output_dir}")
