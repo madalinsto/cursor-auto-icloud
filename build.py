@@ -258,6 +258,31 @@ def build(target_platform=None, target_arch=None):
                 command.append("--target-architecture=universal2")
             elif target_arch in ["x86_64", "arm64"]:
                 command.append(f"--target-architecture={target_arch}")
+                # Set specific environment variables for Intel builds
+                if target_arch == "x86_64":
+                    os.environ["ARCHFLAGS"] = "-arch x86_64"
+                    os.environ["SYSTEM_VERSION_COMPAT"] = "1"
+                    print("Building for Intel: Set ARCHFLAGS=-arch x86_64 and SYSTEM_VERSION_COMPAT=1")
+                    
+                    # For Intel builds, add extra options to force x86_64
+                    command.append("--osx-architecture=x86_64")
+    
+    # Special handling for Intel builds on Apple Silicon
+    if platform_id == "mac_intel" and arch == "arm64" and target_arch == "x86_64":
+        print("\033[93mWarning: Building Intel binary on Apple Silicon - using cross-compilation\033[0m")
+        
+        # Check if this process is running under Rosetta
+        is_rosetta = False
+        try:
+            result = subprocess.run(["sysctl", "-n", "sysctl.proc_translated"], 
+                                    capture_output=True, text=True, check=False)
+            is_rosetta = (result.stdout.strip() == "1")
+        except Exception:
+            pass
+            
+        if not is_rosetta:
+            print("\033[91mWarning: Not running under Rosetta/arch -x86_64. This may cause issues.\033[0m")
+            print("\033[91mRecommendation: Run with 'arch -x86_64 python build.py --platform mac_intel --arch x86_64'\033[0m")
     
     # Add data files
     command.extend(data_args)
@@ -331,6 +356,23 @@ def build(target_platform=None, target_arch=None):
     exec_name = f"{APP_NAME}_{platform_id}" + (".exe" if platform_id == "windows" else "")
     pyinstaller_output = os.path.join("dist", exec_name)
     
+    # For macOS Intel builds, PyInstaller might use a different naming convention
+    if platform_id == "mac_intel":
+        # Try alternative output names that might be generated for Intel builds
+        alt_names = [
+            os.path.join("dist", exec_name),  # Standard name
+            os.path.join("dist", f"{APP_NAME}"),  # Base name without suffix
+            os.path.join("dist", f"{APP_NAME}_macos"),  # Generic macOS name
+            os.path.join("dist", f"{APP_NAME}_darwin"),  # Darwin name
+        ]
+        
+        # Find the first file that exists
+        for alt_name in alt_names:
+            if os.path.exists(alt_name):
+                pyinstaller_output = alt_name
+                print(f"Found Intel executable at alternative path: {alt_name}")
+                break
+
     # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
     print(f"Created output directory: {output_dir}")

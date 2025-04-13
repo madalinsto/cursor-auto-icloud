@@ -163,7 +163,17 @@ jobs:
 
       - name: Build MacOS Intel executable
         run: |
-          python build.py --platform mac_intel --arch x86_64
+          # Force x86_64 architecture using Rosetta 2
+          arch -x86_64 python -m pip install --upgrade pip
+          arch -x86_64 pip install pyinstaller
+          arch -x86_64 pip install -r requirements.txt
+
+          # Set environment variables for Intel build
+          export ARCHFLAGS="-arch x86_64"
+          export SYSTEM_VERSION_COMPAT=1
+
+          # Run the build script with arch command to use Rosetta
+          arch -x86_64 python build.py --platform mac_intel --arch x86_64
 
           # Check if the output directory exists and has files
           if [ -d "dist/mac_intel" ]; then
