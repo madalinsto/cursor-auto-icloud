@@ -265,15 +265,13 @@ def build(target_platform=None, target_arch=None):
                     os.environ["MACOSX_DEPLOYMENT_TARGET"] = "10.15"  # Ensure compatibility
                     print("Building for Intel: Set ARCHFLAGS=-arch x86_64 and SYSTEM_VERSION_COMPAT=1")
                     
-                    # For Intel builds, add extra options to force x86_64
-                    command.append("--osx-architecture=x86_64")
-                    
                     # For macOS Intel builds, let's be more explicit
                     if platform_id == "mac_intel":
                         # Additional options for macOS Intel
                         command.append("--clean")  # Ensure clean build
                         command.append("--noconfirm")  # Don't ask for confirmation
-                        command.append("--noconsole")  # Optional: Hide console window
+                        # Don't use --noconsole as it might cause issues with some app types
+                        # Don't use --osx-architecture flag as it's not supported in this PyInstaller version
     
     # Special handling for Intel builds on Apple Silicon
     if platform_id == "mac_intel" and arch == "arm64" and target_arch == "x86_64":

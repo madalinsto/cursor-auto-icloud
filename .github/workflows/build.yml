@@ -163,55 +163,12 @@ jobs:
 
       - name: Build MacOS Intel executable
         run: |
-          # Verify running macOS version and architecture
-          echo "macOS Version: $(sw_vers -productVersion)"
-          echo "Architecture: $(uname -m)"
-
-          # Verify if Rosetta 2 is available
-          if [ -f /usr/sbin/sysctl ]; then
-            echo "Checking Rosetta status:"
-            /usr/sbin/sysctl -n sysctl.proc_translated || echo "Not running under Rosetta"
-          fi
-
-          # Use a specific Python version for Intel builds
-          # Force x86_64 architecture using Rosetta 2
-          echo "Installing x86_64 dependencies using Rosetta 2..."
-          arch -x86_64 python -m pip install --upgrade pip
-          arch -x86_64 pip install pyinstaller==5.13.2  # Use a specific version known to work
-          arch -x86_64 pip install -r requirements.txt
-
-          # Set environment variables for Intel build
-          export ARCHFLAGS="-arch x86_64"
-          export SYSTEM_VERSION_COMPAT=1
-          export MACOSX_DEPLOYMENT_TARGET=10.15
-
-          # Run the build script with arch command to use Rosetta with extra diagnostic output
-          echo "Starting Intel build process..."
-          arch -x86_64 python -V
-          arch -x86_64 python -c "import platform; print(f'Python arch: {platform.machine()}')"
-
-          # Run the build with verbose output
-          arch -x86_64 python build.py --platform mac_intel --arch x86_64
-
-          echo "Checking dist directory contents after build:"
-          find dist -type f | xargs ls -la || echo "No files found in dist"
-
-          # Try to identify built binary architecture
-          find dist -type f -not -name "*.py" -and -not -name "*.pyc" -and -not -name "*.txt" | while read file; do
-            echo "File: $file"
-            file "$file" || echo "Could not get file info"
-            # On macOS, try lipo to check architecture
-            if command -v lipo &> /dev/null; then
-              echo "Architecture info:"
-              lipo -info "$file" || echo "Not a Mach-O binary"
-            fi
-          done
+          python build.py --platform mac_intel
 
           # Check if the output directory exists and has files
           if [ -d "dist/mac_intel" ]; then
             echo "MacOS Intel output directory exists"
             find "dist/mac_intel" -type f -exec ls -la {} \;
-            find "dist/mac_intel" -type f -exec file {} \;
             
             # Check if directory is empty
             if [ ! "$(ls -A dist/mac_intel)" ]; then
@@ -223,15 +180,6 @@ jobs:
             mkdir -p "dist/mac_intel"
             echo "Placeholder file to prevent artifact upload failure" > "dist/mac_intel/placeholder.txt"
           fi
-
-          # As a fallback, search for any executable in the dist directory and copy it
-          echo "Searching for any potential Intel executables in dist directory..."
-          find dist -type f -perm +111 | grep -v "__pycache__" | while read exec_file; do
-            echo "Found executable: $exec_file"
-            mkdir -p "dist/mac_intel"
-            cp "$exec_file" "dist/mac_intel/CursorKeepAlive"
-            echo "Copied $exec_file to dist/mac_intel/CursorKeepAlive"
-          done
 
       - name: Upload MacOS Intel artifact
         uses: actions/upload-artifact@v4
