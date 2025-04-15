@@ -27,6 +27,7 @@ from src.utils.browser_utils import BrowserManager
 from src.utils.get_email_code import EmailVerificationHandler
 from src.ui.logo import print_logo
 from src.utils.config import Config
+from src.utils.language import LanguageManager, Language, _, getTranslation
 from datetime import datetime
 
 # 定义 EMOJI 字典
@@ -72,9 +73,9 @@ def save_screenshot(tab, stage: str, timestamp: bool = True) -> None:
 
         # 保存截图
         tab.get_screenshot(filepath)
-        logging.debug(f"截图已保存: {filepath}")
+        logging.debug(getTranslation("screenshot_saved").format(filepath))
     except Exception as e:
-        logging.warning(f"截图保存失败: {str(e)}")
+        logging.warning(getTranslation("screenshot_save_failed").format(str(e)))
 
 
 def check_verification_success(tab) -> Optional[VerificationStatus]:
@@ -86,7 +87,7 @@ def check_verification_success(tab) -> Optional[VerificationStatus]:
     """
     for status in VerificationStatus:
         if tab.ele(status.value):
-            logging.info(f"验证成功 - 已到达{status.name}页面")
+            logging.info(getTranslation("verification_success_page").format(status.name))
             return status
     return None
 
@@ -106,7 +107,7 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
     Raises:
         TurnstileError: 验证过程中出现异常
     """
-    logging.info("正在检测 Turnstile 验证...")
+    logging.info(getTranslation("detecting_turnstile"))
     save_screenshot(tab, "start")
 
     retry_count = 0
@@ -114,7 +115,7 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
     try:
         while retry_count < max_retries:
             retry_count += 1
-            logging.debug(f"第 {retry_count} 次尝试验证")
+            logging.debug(getTranslation("verification_attempt").format(retry_count))
 
             try:
                 # 定位验证框元素
@@ -127,7 +128,7 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
                 )
 
                 if challenge_check:
-                    logging.info("检测到 Turnstile 验证框，开始处理...")
+                    logging.info(getTranslation("turnstile_detected"))
                     # 随机延时后点击验证
                     time.sleep(random.uniform(1, 3))
                     challenge_check.click()
@@ -138,12 +139,12 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
 
                     # 检查验证结果
                     if check_verification_success(tab):
-                        logging.info("Turnstile 验证通过")
+                        logging.info(getTranslation("turnstile_passed"))
                         save_screenshot(tab, "success")
                         return True
 
             except Exception as e:
-                logging.debug(f"当前尝试未成功: {str(e)}")
+                logging.debug(getTranslation("attempt_failed").format(str(e)))
 
             # 检查是否已经验证成功
             if check_verification_success(tab):
@@ -153,15 +154,13 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
             time.sleep(random.uniform(*retry_interval))
 
         # 超出最大重试次数
-        logging.error(f"验证失败 - 已达到最大重试次数 {max_retries}")
-        logging.error(
-            "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
-        )
+        logging.error(getTranslation("verification_max_retries_reached").format(max_retries))
+        logging.error(getTranslation("visit_project_for_info"))
         save_screenshot(tab, "failed")
         return False
 
     except Exception as e:
-        error_msg = f"Turnstile 验证过程发生异常: {str(e)}"
+        error_msg = getTranslation("turnstile_exception").format(str(e))
         logging.error(error_msg)
         save_screenshot(tab, "error")
         raise TurnstileError(error_msg)
@@ -175,7 +174,7 @@ def get_cursor_session_token(tab, max_attempts=3, retry_interval=2):
     :param retry_interval: 重试间隔(秒)
     :return: session token 或 None
     """
-    logging.info("开始获取cookie")
+    logging.info(getTranslation("getting_cookies"))
     attempts = 0
 
     while attempts < max_attempts:
@@ -187,20 +186,16 @@ def get_cursor_session_token(tab, max_attempts=3, retry_interval=2):
 
             attempts += 1
             if attempts < max_attempts:
-                logging.warning(
-                    f"第 {attempts} 次尝试未获取到CursorSessionToken，{retry_interval}秒后重试..."
-                )
+                logging.warning(getTranslation("token_attempt_failed").format(attempts, retry_interval))
                 time.sleep(retry_interval)
             else:
-                logging.error(
-                    f"已达到最大尝试次数({max_attempts})，获取CursorSessionToken失败"
-                )
+                logging.error(getTranslation("token_max_attempts").format(max_attempts))
 
         except Exception as e:
-            logging.error(f"获取cookie失败: {str(e)}")
+            logging.error(getTranslation("get_cookie_failed").format(str(e)))
             attempts += 1
             if attempts < max_attempts:
-                logging.info(f"将在 {retry_interval} 秒后重试...")
+                logging.info(getTranslation("retry_in_seconds").format(retry_interval))
                 time.sleep(retry_interval)
 
     return None
@@ -232,50 +227,50 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
     Returns:
         bool: True if signup was successful, False otherwise
     """
-    logging.info("=== 开始注册账号流程 ===")
-    logging.info(f"正在访问注册页面: {sign_up_url}")
+    logging.info(getTranslation("start_registration"))
+    logging.info(getTranslation("visiting_login_page").format(sign_up_url))
     tab.get(sign_up_url)
 
     try:
         if tab.ele("@name=first_name"):
-            logging.info("正在填写个人信息...")
+            logging.info(getTranslation("filling_personal_info"))
             tab.actions.click("@name=first_name").input(first_name)
-            logging.info(f"已输入名字: {first_name}")
+            logging.info(getTranslation("input_first_name").format(first_name))
             time.sleep(random.uniform(1, 3))
 
             tab.actions.click("@name=last_name").input(last_name)
-            logging.info(f"已输入姓氏: {last_name}")
+            logging.info(getTranslation("input_last_name").format(last_name))
             time.sleep(random.uniform(1, 3))
 
             tab.actions.click("@name=email").input(account)
-            logging.info(f"已输入邮箱: {account}")
+            logging.info(getTranslation("input_email").format(account))
             time.sleep(random.uniform(1, 3))
 
-            logging.info("提交个人信息...")
+            logging.info(getTranslation("submit_personal_info"))
             tab.actions.click("@type=submit")
 
     except Exception as e:
-        logging.error(f"注册页面访问失败: {str(e)}")
+        logging.error(getTranslation("signup_page_access_failed").format(str(e)))
         return False
 
     handle_turnstile(tab)
 
     try:
         if tab.ele("@name=password"):
-            logging.info("正在设置密码...")
+            logging.info(getTranslation("setting_password"))
             tab.ele("@name=password").input(password)
             time.sleep(random.uniform(1, 3))
 
-            logging.info("提交密码...")
+            logging.info(getTranslation("submit_password"))
             tab.ele("@type=submit").click()
-            logging.info("密码设置完成，等待系统响应...")
+            logging.info(getTranslation("password_setup_complete"))
 
     except Exception as e:
-        logging.error(f"密码设置失败: {str(e)}")
+        logging.error(getTranslation("password_setup_failed").format(str(e)))
         return False
 
     if tab.ele("This email is not available."):
-        logging.error("注册失败：邮箱已被使用")
+        logging.error(getTranslation("email_already_used"))
         return False
 
     handle_turnstile(tab)
@@ -283,34 +278,34 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
     while True:
         try:
             if tab.ele("Account Settings"):
-                logging.info("注册成功 - 已进入账户设置页面")
+                logging.info(getTranslation("registration_successful"))
                 break
             if tab.ele("@data-index=0"):
-                logging.info("正在获取邮箱验证码...")
+                logging.info(getTranslation("getting_verification_code"))
                 code = email_handler.get_verification_code()
                 if not code:
-                    logging.error("获取验证码失败")
+                    logging.error(getTranslation("verification_code_failed"))
                     return False
 
-                logging.info(f"成功获取验证码: {code}")
-                logging.info("正在输入验证码...")
+                logging.info(getTranslation("verification_code_success").format(code))
+                logging.info(getTranslation("entering_verification_code"))
                 i = 0
                 for digit in code:
                     tab.ele(f"@data-index={i}").input(digit)
                     time.sleep(random.uniform(0.1, 0.3))
                     i += 1
-                logging.info("验证码输入完成")
+                logging.info(getTranslation("verification_code_complete"))
                 break
         except Exception as e:
-            logging.error(f"验证码处理过程出错: {str(e)}")
+            logging.error(getTranslation("verification_process_error").format(str(e)))
 
     handle_turnstile(tab)
     wait_time = random.randint(3, 6)
     for i in range(wait_time):
-        logging.info(f"等待系统处理中... 剩余 {wait_time-i} 秒")
+        logging.info(getTranslation("waiting_for_processing").format(wait_time-i))
         time.sleep(1)
 
-    logging.info("正在获取账户信息...")
+    logging.info(getTranslation("getting_account_info"))
     tab.get(settings_url)
     try:
         usage_selector = (
@@ -322,15 +317,15 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
         if usage_ele:
             usage_info = usage_ele.text
             total_usage = usage_info.split("/")[-1].strip()
-            logging.info(f"账户可用额度上限: {total_usage}")
+            logging.info(getTranslation("account_usage_limit").format(total_usage))
             logging.info(
                 "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
             )
     except Exception as e:
-        logging.error(f"获取账户额度信息失败: {str(e)}")
+        logging.error(getTranslation("get_account_limit_failed").format(str(e)))
 
-    logging.info("\n=== 注册完成 ===")
-    account_info = f"Cursor 账号信息:\n邮箱: {account}\n密码: {password}"
+    logging.info(getTranslation("registration_complete"))
+    account_info = getTranslation("cursor_account_info").format(account, password)
     logging.info(account_info)
     time.sleep(5)
     return True
@@ -380,7 +375,7 @@ class EmailGenerator:
         try:
             dotenv.load_dotenv()
         except Exception as e:
-            logging.warning(f"Failed to load .env file: {str(e)}")
+            logging.warning(getTranslation("env_file_load_failed").format(str(e)))
         
         # Try to import iCloud email generator if use_icloud is True
         if self.use_icloud:
@@ -388,7 +383,7 @@ class EmailGenerator:
                 # Import the module from the correct location
                 from src.icloud.generateEmail import generateIcloudEmail
                 self.generateIcloudEmail = generateIcloudEmail
-                logging.info("已启用 iCloud 隐藏邮箱功能")
+                logging.info(getTranslation("icloud_feature_enabled"))
             except ImportError:
                 try:
                     # Try relative import as fallback
@@ -397,9 +392,9 @@ class EmailGenerator:
                         sys.path.append(current_dir)
                     from icloud.generateEmail import generateIcloudEmail
                     self.generateIcloudEmail = generateIcloudEmail
-                    logging.info("已启用 iCloud 隐藏邮箱功能")
+                    logging.info(getTranslation("icloud_feature_enabled"))
                 except ImportError:
-                    logging.error("导入 iCloud 邮箱生成模块失败，将使用本地邮箱列表")
+                    logging.error(getTranslation("icloud_module_import_failed_local"))
                     self.use_icloud = False
 
     def load_names(self):
@@ -414,12 +409,12 @@ class EmailGenerator:
         for names_file_path in possible_paths:
             try:
                 with open(names_file_path, "r") as file:
-                    logging.info(f"名称数据集已从 {names_file_path} 加载")
+                    logging.info(getTranslation("names_dataset_loaded").format(names_file_path))
                     return file.read().split()
             except FileNotFoundError:
                 continue
                 
-        logging.error(f"Names dataset file not found in any known location")
+        logging.error(getTranslation("names_dataset_not_found"))
         # Return a small set of default names as fallback
         return ["John", "Jane", "Michael", "Emma", "Robert", "Olivia"]
 
@@ -474,10 +469,10 @@ class EmailGenerator:
                 if emails and len(emails) > 0:
                     return emails[0]
                 else:
-                    logging.warning("iCloud 邮箱生成失败，将使用本地邮箱列表")
+                    logging.warning(getTranslation("icloud_email_gen_failed"))
             except Exception as e:
-                logging.error(f"iCloud 邮箱生成失败: {str(e)}")
-                logging.warning("将使用本地邮箱列表")
+                logging.error(getTranslation("icloud_email_gen_error").format(str(e)))
+                logging.warning(getTranslation("using_local_email_list"))
             
         # If iCloud failed or not enabled, use local email list
         emails_file_path = self.get_emails_file_path()
@@ -491,13 +486,13 @@ class EmailGenerator:
             if not os.path.exists(emails_file_path):
                 with open(emails_file_path, "w") as f:
                     pass
-                logging.warning(f"Created empty email list file at {emails_file_path}")
+                logging.warning(getTranslation("empty_email_file_created").format(emails_file_path))
                 
             with open(emails_file_path, "r") as f:
                 lines = f.readlines()
                 
             if not lines:                    
-                logging.warning("邮箱列表为空，程序执行完毕")
+                logging.warning(getTranslation("email_list_empty"))
                 sys.exit(1)
                     
             first_email = lines[0].strip()
@@ -508,8 +503,8 @@ class EmailGenerator:
                 
             return first_email
         except Exception as e:
-            logging.error(f"Error reading email file: {str(e)}")
-            logging.warning("邮箱列表为空，程序执行完毕")
+            logging.error(getTranslation("email_file_read_error").format(str(e)))
+            logging.warning(getTranslation("email_list_empty"))
             sys.exit(1)
 
     def get_account_info(self):
@@ -532,7 +527,7 @@ def get_user_agent():
         browser_manager.quit()
         return user_agent
     except Exception as e:
-        logging.error(f"获取user agent失败: {str(e)}")
+        logging.error(getTranslation("get_user_agent_failed").format(str(e)))
         return None
 
 
@@ -553,13 +548,7 @@ def reset_machine_id(greater_than_0_45):
 
 
 def print_end_message():
-    logging.info("\n\n\n\n\n")
-    logging.info("=" * 30)
-    logging.info("所有操作已完成")
-    logging.info("\n=== 获取更多信息 ===")
-    logging.info(
-        "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
-    )
+    logging.info(getTranslation("operation_complete"))
 
 
 def save_account_to_csv(account_info, csv_path="accounts.csv"):
@@ -580,7 +569,7 @@ def save_account_to_csv(account_info, csv_path="accounts.csv"):
         csv_path = os.path.join(env_dir, "accounts.csv")
         
     file_path = Path(csv_path)
-    logging.info(f"正在保存账号信息到CSV文件: {file_path}")
+    logging.info(getTranslation("saving_account_to_csv").format(file_path))
     
     # Check if file exists to determine if we need to write headers
     file_exists = file_path.exists()
@@ -604,10 +593,10 @@ def save_account_to_csv(account_info, csv_path="accounts.csv"):
             # Write account info
             writer.writerow(account_info_with_date)
             
-        logging.info(f"账号信息已保存至 {csv_path}")
+        logging.info(getTranslation("account_saved_to_csv").format(csv_path))
         return True
     except Exception as e:
-        logging.error(f"保存账号信息失败: {str(e)}")
+        logging.error(getTranslation("save_account_failed").format(str(e)))
         return False
 
 
@@ -616,45 +605,59 @@ def main():
     greater_than_0_45 = check_cursor_version()
     browser_manager = None
     
+    # Initialize the language manager
+    lang_manager = LanguageManager()
+    
     # Define URLs used in the program
     login_url = "https://authenticator.cursor.sh"
     sign_up_url = "https://authenticator.cursor.sh/sign-up"
     settings_url = "https://www.cursor.com/settings"
     
     try:
-        logging.info("\n=== 初始化程序 ===")
+        logging.info(getTranslation("program_init"))
         ExitCursor()
 
-        # 提示用户选择操作模式
-        print("\n请选择操作模式:")
-        print("1. 仅重置机器码")
-        print("2. 完整注册流程")
-        print("3. 生成 iCloud 隐藏邮箱")
-        print("4. 完整注册流程（使用 iCloud 隐藏邮箱）")
-
+        # Main menu loop to handle language switching
         while True:
-            try:
-                choice = int(input("请输入选项 (1-4): ").strip())
-                if choice in [1, 2, 3, 4]:
-                    break
-                else:
-                    print("无效的选项,请重新输入")
-            except ValueError:
-                print("请输入有效的数字")
+            # Using the new getTranslation function for more readable code
+            print(getTranslation("select_operation_mode"))
+            print(getTranslation("reset_machine_code_only"))
+            print(getTranslation("complete_registration"))
+            print(getTranslation("generate_icloud_email"))
+            print(getTranslation("complete_registration_icloud"))
+            print(getTranslation("select_language"))
+
+            while True:
+                try:
+                    # Using the original _ function for comparison
+                    choice = int(input(_("enter_option")).strip())
+                    if choice in [1, 2, 3, 4, 5]:
+                        break
+                    else:
+                        print(_("invalid_option"))
+                except ValueError:
+                    print(_("enter_valid_number"))
+
+            if choice == 5:
+                # Switch language
+                lang_manager.select_language()
+                continue  # Return to the main menu with new language
+            else:
+                break  # Exit the menu loop and proceed with the selected option
 
         if choice == 1:
             # 仅执行重置机器码
             reset_machine_id(greater_than_0_45)
-            logging.info("机器码重置完成")
+            logging.info(getTranslation("reset_complete"))
             print_end_message()
             sys.exit(0)
             
         elif choice == 3:
             # 生成 iCloud 隐藏邮箱
             try:
-                count = int(input("请输入要生成的邮箱数量: ").strip())
+                count = int(input(getTranslation("enter_email_count")).strip())
                 if count <= 0:
-                    logging.error("邮箱数量必须大于0")
+                    logging.error(getTranslation("email_count_gt_zero"))
                     sys.exit(1)
                     
                 # Import the iCloud email generator
@@ -671,27 +674,27 @@ def main():
                         from icloud.generateEmail import generateIcloudEmail
                         emails = generateIcloudEmail(count)
                     except ImportError:
-                        logging.error("导入 iCloud 邮箱生成模块失败")
-                        print("无法导入 iCloud 邮箱生成模块，请确保安装了所有依赖")
+                        logging.error(getTranslation("icloud_module_import_failed"))
+                        print(getTranslation("install_dependencies"))
                         print_end_message()
                         sys.exit(1)
                 
                 if emails:
-                    print(f"成功生成 {len(emails)} 个邮箱地址:")
+                    print(getTranslation("generated_emails").format(len(emails)))
                     for email in emails:
                         print(email)
                 else:
-                    print("未生成任何邮箱地址")
+                    print(getTranslation("no_emails_generated"))
             except ValueError:
-                logging.error("无效的数量")
+                logging.error(getTranslation("invalid_count"))
                 sys.exit(1)
 
-        logging.info("正在初始化浏览器...")
+        logging.info(getTranslation("initializing_browser"))
 
         # 获取user_agent
         user_agent = get_user_agent()
         if not user_agent:
-            logging.error("获取user agent失败，使用默认值")
+            logging.error(getTranslation("getting_user_agent_failed"))
             user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
         # 剔除user_agent中的"HeadlessChrome"
@@ -703,12 +706,10 @@ def main():
         # 获取并打印浏览器的user-agent
         user_agent = browser.latest_tab.run_js("return navigator.userAgent")
 
-        logging.info(
-            "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
-        )
-        logging.info("\n=== 配置信息 ===")
+        logging.info(getTranslation("visit_project_for_info"))
+        logging.info(getTranslation("config_info"))
         
-        logging.info("正在生成随机账号信息...")
+        logging.info(getTranslation("generating_random_account"))
 
         # 使用 iCloud 隐藏邮箱 if choice is 4
         use_icloud = (choice == 4)
@@ -718,9 +719,9 @@ def main():
         account = email_generator.generate_email()
         password = email_generator.default_password
 
-        logging.info(f"生成的邮箱账号: {account}")
+        logging.info(getTranslation("generated_email_account").format(account))
 
-        logging.info("正在初始化邮箱验证模块...")
+        logging.info(getTranslation("initializing_email_verification"))
         email_handler = EmailVerificationHandler(account)
 
         auto_update_cursor_auth = True
@@ -729,12 +730,12 @@ def main():
 
         tab.run_js("try { turnstile.reset() } catch(e) { }")
 
-        logging.info("\n=== 开始注册流程 ===")
-        logging.info(f"正在访问登录页面: {login_url}")
+        logging.info(getTranslation("start_registration"))
+        logging.info(getTranslation("visiting_login_page").format(login_url))
         tab.get(login_url)
 
         if sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler):
-            logging.info("正在获取会话令牌...")
+            logging.info(getTranslation("getting_session_token"))
             token = get_cursor_session_token(tab)
             if token:
                 account_info = {
@@ -745,29 +746,27 @@ def main():
                     'last_name': last_name
                 }
                 save_account_to_csv(account_info)
-                logging.info("更新认证信息...")
+                logging.info(getTranslation("updating_auth_info"))
                 update_cursor_auth(
                     email=account, access_token=token, refresh_token=token
                 )
-                logging.info(
-                    "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
-                )
-                logging.info("重置机器码...")
+                logging.info(getTranslation("visit_project_for_info"))
+                logging.info(getTranslation("resetting_machine_code"))
                 reset_machine_id(greater_than_0_45)
-                logging.info("所有操作已完成")
+                logging.info(getTranslation("all_operations_complete"))
                 print_end_message()
             else:
-                logging.error("获取会话令牌失败，注册流程未完成")
+                logging.error(getTranslation("session_token_failed"))
 
     except Exception as e:
-        logging.error(f"程序执行出现错误: {str(e)}")
+        logging.error(getTranslation("program_execution_error").format(str(e)))
         import traceback
 
         logging.error(traceback.format_exc())
     finally:
         if browser_manager:
             browser_manager.quit()
-        input("\n程序执行完毕，按回车键退出...")
+        input(getTranslation("program_complete"))
 
 
 # If this script is run directly, execute the main function

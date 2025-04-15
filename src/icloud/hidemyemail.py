@@ -5,9 +5,17 @@ import certifi
 import os
 import sys
 
-# Add parent directory to path to import logger
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from utils.logger import logging
+# Add parent directory to path to import language module
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+try:
+    from src.utils.logger import logging
+    from src.utils.language import getTranslation, _
+except ImportError:
+    from utils.logger import logging
+    from utils.language import getTranslation, _
 
 
 class HideMyEmail:
@@ -72,23 +80,23 @@ class HideMyEmail:
     async def generate_email(self) -> dict:
         """Generates an email"""
         try:
-            logging.debug("正在生成 iCloud 隐藏邮箱...")
+            logging.debug(getTranslation("generating_icloud_hidden_email"))
             async with self.s.post(
                 f"{self.base_url_v1}/generate", params=self.params, json={"langCode": "en-us"}
             ) as resp:
                 res = await resp.json()
                 return res
         except asyncio.TimeoutError:
-            logging.error("生成邮箱超时")
-            return {"error": 1, "reason": "Request timed out"}
+            logging.error(getTranslation("generate_email_timeout"))
+            return {"error": 1, "reason": getTranslation("request_timeout")}
         except Exception as e:
-            logging.error(f"生成邮箱失败: {str(e)}")
+            logging.error(getTranslation("generate_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
 
     async def reserve_email(self, email: str) -> dict:
         """Reserves an email and registers it for forwarding"""
         try:
-            logging.debug(f"正在保留邮箱 {email}...")
+            logging.debug(getTranslation("reserving_email").format(email))
             payload = {
                 "hme": email,
                 "label": self.label,
@@ -100,38 +108,38 @@ class HideMyEmail:
                 res = await resp.json()
             return res
         except asyncio.TimeoutError:
-            logging.error("保留邮箱超时")
-            return {"error": 1, "reason": "Request timed out"}
+            logging.error(getTranslation("reserve_email_timeout"))
+            return {"error": 1, "reason": getTranslation("request_timeout")}
         except Exception as e:
-            logging.error(f"保留邮箱失败: {str(e)}")
+            logging.error(getTranslation("reserve_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
 
     async def list_email(self) -> dict:
         """List all HME"""
-        logging.info("正在获取邮箱列表...")
+        logging.info(getTranslation("getting_email_list"))
         try:
             async with self.s.get(f"{self.base_url_v2}/list", params=self.params) as resp:
                 res = await resp.json()
                 return res
         except asyncio.TimeoutError:
-            logging.error("获取邮箱列表超时")
-            return {"error": 1, "reason": "Request timed out"}
+            logging.error(getTranslation("list_email_timeout"))
+            return {"error": 1, "reason": getTranslation("request_timeout")}
         except Exception as e:
-            logging.error(f"获取邮箱列表失败: {str(e)}")
+            logging.error(getTranslation("list_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
 
 
     async def delete_email(self, email: str) -> dict:
         """Deletes an email"""
-        logging.info(f"正在删除邮箱 {email}...")
+        logging.info(getTranslation("deleting_email").format(email))
         try: 
             async with self.s.post(f"{self.base_url_v1}/delete", params=self.params, json={"hme": email}) as resp:
                 res = await resp.json()
                 return res
         except asyncio.TimeoutError:
-            logging.error("删除邮箱超时")
-            return {"error": 1, "reason": "Request timed out"}
+            logging.error(getTranslation("delete_email_timeout"))
+            return {"error": 1, "reason": getTranslation("request_timeout")}
         except Exception as e:
-            logging.error(f"删除邮箱失败: {str(e)}")
+            logging.error(getTranslation("delete_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
         

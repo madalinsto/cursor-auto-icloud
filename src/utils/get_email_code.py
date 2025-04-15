@@ -11,6 +11,9 @@ from email.parser import Parser
 import json
 import socket
 
+# Import translation functions
+from src.utils.language import getTranslation, _
+
 
 class EmailVerificationHandler:
     def __init__(self,account):
@@ -31,24 +34,24 @@ class EmailVerificationHandler:
 
         for attempt in range(max_retries):
             try:
-                logging.info(f"尝试获取验证码 (第 {attempt + 1}/{max_retries} 次)...")
+                logging.info(getTranslation("verification_code_attempt").format(attempt + 1, max_retries))
 
                 verify_code = self._get_latest_mail_code()
                 if attempt < max_retries - 1 and not verify_code:  # 除了最后一次尝试，都等待
-                    logging.warning(f"未获取到验证码，{retry_interval} 秒后重试...")
+                    logging.warning(getTranslation("verification_code_not_found_retry").format(retry_interval))
                     time.sleep(retry_interval)
                 else: 
                     return verify_code
 
             except Exception as e:
-                logging.error(f"获取验证码失败: {e}")  # 记录更一般的异常
+                logging.error(getTranslation("verification_code_fetch_failed").format(e))  # 记录更一般的异常
                 if attempt < max_retries - 1:
-                    logging.error(f"发生错误，{retry_interval} 秒后重试...")
+                    logging.error(getTranslation("error_will_retry").format(retry_interval))
                     time.sleep(retry_interval)
                 else:
-                    raise Exception(f"获取验证码失败且已达最大重试次数: {e}") from e
+                    raise Exception(getTranslation("max_retries_reached_with_error").format(e)) from e
 
-        raise Exception(f"经过 {max_retries} 次尝试后仍未获取到验证码。")
+        raise Exception(getTranslation("verification_code_not_found_after_attempts").format(max_retries))
 
     # 手动输入验证码
     def _get_latest_mail_code(self):
@@ -62,7 +65,7 @@ class EmailVerificationHandler:
         # 首先尝试 iCloud IMAP
         icloud_imap = Config().get_icloud_imap()
         if icloud_imap:
-            logging.info("使用 iCloud IMAP 获取邮件...")
+            logging.info(getTranslation("using_icloud_imap"))
             verify_code = self._get_mail_code_by_icloud_imap(icloud_imap)
             if verify_code:
                 return verify_code
@@ -83,7 +86,7 @@ class EmailVerificationHandler:
         if retry > 0:
             time.sleep(3)
         if retry >= 20:
-            raise Exception("获取验证码超时")
+            raise Exception(getTranslation("verification_code_timeout"))
         
         try:
             # 连接到 iCloud IMAP 服务器
@@ -95,14 +98,14 @@ class EmailVerificationHandler:
             # 获取最近的邮件
             status, messages = mail.search(None, 'ALL')
             if status != 'OK':
-                logging.error(f"获取 iCloud 邮件列表失败: {status}")
+                logging.error(getTranslation("icloud_email_list_failed").format(status))
                 return None
             
             mail_ids = messages[0].split()
             print(mail_ids)
             if not mail_ids:
                 # 没有获取到邮件
-                logging.info("iCloud 邮箱中没有找到邮件")
+                logging.info(getTranslation("no_emails_in_icloud"))
                 return self._get_mail_code_by_icloud_imap(icloud_config, retry=retry + 1)
             
             # 检查最新的10封邮件
@@ -111,11 +114,11 @@ class EmailVerificationHandler:
                 try:
                     status, msg_data = mail.fetch(mail_id, '(BODY[])')
                 except (EOFError, ConnectionError, socket.error) as e:
-                    logging.error(f"iCloud IMAP fetch failed: {e}")
+                    logging.error(getTranslation("icloud_imap_fetch_failed").format(e))
                     mail.logout()
                     return None
                 if status != 'OK':
-                    logging.error(f"iCloud IMAP fetch failed with status: {status}")
+                    logging.error(getTranslation("icloud_imap_fetch_status_failed").format(status))
                     continue
                 raw_email = msg_data[0][1]
 
@@ -135,7 +138,7 @@ class EmailVerificationHandler:
                     code_match = re.search(r"(?<![a-zA-Z@.])\b\d{6}\b", body)
                     if code_match:
                         code = code_match.group()
-                        logging.info(f"从 iCloud 邮件中找到验证码: {code}")
+                        logging.info(getTranslation("verification_code_found_in_email").format(code))
                         
                         mail.store(mail_id, '+FLAGS', '\\Deleted')
                         mail.expunge()
@@ -143,12 +146,12 @@ class EmailVerificationHandler:
                         mail.logout()
                         return code
             
-            logging.info("在 iCloud 邮件中未找到验证码")
+            logging.info(getTranslation("no_verification_code_in_email"))
             mail.logout()
             return None
             
         except Exception as e:
-            logging.error(f"iCloud IMAP 操作失败: {e}")
+            logging.error(getTranslation("icloud_imap_operation_failed").format(e))
             return None
 
     def _extract_imap_body(self, email_message):
@@ -163,7 +166,7 @@ class EmailVerificationHandler:
                         body = part.get_payload(decode=True).decode(charset, errors='ignore')
                         return body
                     except Exception as e:
-                        logging.error(f"解码邮件正文失败: {e}")
+                        logging.error(getTranslation("email_body_decode_failed").format(e))
         else:
             content_type = email_message.get_content_type()
             if content_type == "text/plain":
@@ -172,7 +175,7 @@ class EmailVerificationHandler:
                     body = email_message.get_payload(decode=True).decode(charset, errors='ignore')
                     return body
                 except Exception as e:
-                    logging.error(f"解码邮件正文失败: {e}")
+                    logging.error(getTranslation("email_body_decode_failed").format(e))
         return ""
 
 if __name__ == "__main__":

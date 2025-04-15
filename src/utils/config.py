@@ -1,8 +1,26 @@
 from dotenv import load_dotenv
 import os
 import sys
-from src.utils.logger import logging
 import json
+
+# Add parent directory to path to import language module
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+try:
+    from src.utils.logger import logging
+    from src.utils.language import getTranslation, _
+except ImportError:
+    from utils.logger import logging
+    try:
+        from utils.language import getTranslation, _
+    except ImportError:
+        # Fallback if language module is not available
+        def getTranslation(key, *args):
+            if args:
+                return key.format(*args)
+            return key
 
 
 class Config:
@@ -20,7 +38,7 @@ class Config:
         dotenv_path = os.path.join(application_path, ".env")
 
         if not os.path.exists(dotenv_path):
-            raise FileNotFoundError(f"文件 {dotenv_path} 不存在")
+            raise FileNotFoundError(getTranslation("env_file_not_exist").format(dotenv_path))
 
         # 加载 .env 文件
         load_dotenv(dotenv_path)
@@ -67,14 +85,14 @@ class Config:
         """
 
         required_configs = {
-            "icloud_user": "iCloud 邮箱",
-            "icloud_pass": "iCloud 应用专用密码",
+            "icloud_user": getTranslation("icloud_email"),
+            "icloud_pass": getTranslation("icloud_app_password"),
         }
 
         # 检查基础配置
         for key, name in required_configs.items():
             if not self.check_is_valid(getattr(self, key)):
-                raise ValueError(f"{name}未配置，请在 .env 文件中设置 {key.upper()}")
+                raise ValueError(getTranslation("config_not_set").format(name=name, key=key.upper()))
 
 
 
@@ -90,15 +108,15 @@ class Config:
         return isinstance(value, str) and len(str(value).strip()) > 0
 
     def print_config(self):
-        logging.info(f"iCloud 邮箱: {self.icloud_user}@icloud.com")
-        logging.info(f"iCloud 应用专用密码: {self.icloud_pass}")
+        logging.info(getTranslation("icloud_email_info").format(self.icloud_user))
+        logging.info(getTranslation("icloud_password_info").format(self.icloud_pass))
 
 
 # 使用示例
 if __name__ == "__main__":
     try:
         config = Config()
-        print("环境变量加载成功！")
+        print(getTranslation("env_loaded_success"))
         config.print_config()
     except ValueError as e:
-        print(f"错误: {e}")
+        print(getTranslation("error_message").format(str(e)))
