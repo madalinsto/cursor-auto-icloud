@@ -29,20 +29,22 @@ try:
     from src.utils.logger import logging
     from src.core.cursor_pro_keep_alive import main as cursor_keep_alive_main
     from src.ui.logo import print_logo
+    from src.utils.language import getTranslation
 except ImportError:
     # If direct import fails, try relative import
     from utils.logger import logging
     from core.cursor_pro_keep_alive import main as cursor_keep_alive_main
     from ui.logo import print_logo
+    from utils.language import getTranslation
 
 def main():
     """Main entry point for the application."""
     print_logo()
-    logging.info("Starting Cursor Pro Keep Alive application...")
+    logging.info(getTranslation("application_starting"))
     try:
         cursor_keep_alive_main()
     except Exception as e:
-        logging.error(f"An error occurred: {str(e)}")
+        logging.error(getTranslation("application_error").format(str(e)))
         import traceback
         logging.error(traceback.format_exc())
         return 1

@@ -1,6 +1,26 @@
 import psutil
-from logger import logging  
 import time
+import os
+import sys
+
+# Add parent directory to path to import language module
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+try:
+    from src.utils.logger import logging
+    from src.utils.language import getTranslation, _
+except ImportError:
+    from logger import logging
+    try:
+        from utils.language import getTranslation, _
+    except ImportError:
+        # Fallback if language module is not available
+        def getTranslation(key, *args):
+            if args:
+                return key.format(*args)
+            return key
 
 def ExitCursor(timeout=5):
     """
@@ -12,7 +32,7 @@ def ExitCursor(timeout=5):
         bool: 是否成功关闭所有进程
     """
     try:
-        logging.info("开始退出Cursor...")
+        logging.info(getTranslation("starting_cursor_exit"))
         cursor_processes = []
         # 收集所有 Cursor 进程
         for proc in psutil.process_iter(['pid', 'name']):
@@ -23,7 +43,7 @@ def ExitCursor(timeout=5):
                 continue
 
         if not cursor_processes:
-            logging.info("未发现运行中的 Cursor 进程")
+            logging.info(getTranslation("no_cursor_processes_found"))
             return True
 
         # 温和地请求进程终止
@@ -46,7 +66,7 @@ def ExitCursor(timeout=5):
                     continue
             
             if not still_running:
-                logging.info("所有 Cursor 进程已正常关闭")
+                logging.info(getTranslation("all_cursor_processes_closed"))
                 return True
                 
             # 等待一小段时间再检查
@@ -55,13 +75,13 @@ def ExitCursor(timeout=5):
         # 如果超时后仍有进程在运行
         if still_running:
             process_list = ", ".join([str(p.pid) for p in still_running])
-            logging.warning(f"以下进程未能在规定时间内关闭: {process_list}")
+            logging.warning(getTranslation("processes_not_closed_in_time").format(process_list))
             return False
             
         return True
 
     except Exception as e:
-        logging.error(f"关闭 Cursor 进程时发生错误: {str(e)}")
+        logging.error(getTranslation("error_closing_cursor").format(str(e)))
         return False
 
 if __name__ == "__main__":

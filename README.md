@@ -1,109 +1,127 @@
-# Cursor Pro (iCloud) 自动化工具
+# Cursor Pro (iCloud) Automation Tool - Free Trial Reset Tool
 
-⭐️ 在 GitHub 上给我们 Star — 这对我们是很大的鼓励！
+<div align="center">
 
-[English README](README-en.md)
+[![Release](https://img.shields.io/github/v/release/ryan0204/cursor-auto-icloud?style=flat-square&logo=github&color=blue)](https://github.com/ryan0204/cursor-auto-icloud/releases/latest)
+[![Stars](https://img.shields.io/github/stars/ryan0204/cursor-auto-icloud?style=flat-square&logo=github)](https://github.com/ryan0204/cursor-auto-icloud/stargazers)
 
-## 目录
 
-- [准备工作](#准备工作)
-- [下载](#下载)
-- [设置](#设置)
-- [运行工具](#运行工具)
-- [免责声明](#免责声明)
-- [致谢](#致谢)
-- [贡献](#贡献)
-- [许可证](#许可证)
+## ⭐️ Star us on GitHub — it motivates us a lot!
 
-## 准备工作
+[🌏 中文 README](README-zh.md)
 
-在使用此工具之前，您应该准备以下内容：
+<img src="https://ai-cursor.com/wp-content/uploads/2024/09/logo-cursor-ai-png.webp" alt="Cursor Logo" width="120"/>
 
-- 一个拥有 **iCloud Plus** 的苹果账号
+<img src="/assets/img/preview.png" alt="Tool Preview"/>
 
-## 下载
+</div>
 
-1. 从 GitHub Releases 下载最新版本
-2. 根据你的系统选择对应的版本：
+## Table of Contents
 
-> Windows：直接下载 CursorKeepAlive.exe
-> Mac（Intel）：选择 x64 版本
-> Mac（M系列）：选择 ARM64(aarch64) 版本
+- [Prepare](#prepare)
+- [Download](#download)
+- [Setting up](#setting-up)
+- [Running the tool](#running-the-tool)
+- [Disclaimer](#disclaimer)
+- [Credits](#credits)
+- [Contributing](#contributing)
+- [License](#license)
 
-### Mac 用户额外步骤
+## Prepare
 
-> 打开终端，进入应用所在目录
-> 执行以下命令使文件可执行：
+You should have following items before using this tool:
+
+- An apple account (with @icloud.com as suffix) with **iCloud Plus**
+
+## Download
+
+1. Download the latest version from GitHub Releases
+2. Choose the version according to your system:
+
+> Windows: Download CursorKeepAlive.exe directly
+> Mac (Intel): Choose x64 version
+> Mac (M series): Choose ARM64(aarch64) version
+
+### Additional Steps for Mac Users
+
+> Open Terminal, navigate to the application directory
+> Execute the following command to make the file executable:
 > ```chmod +x ./CursorKeepAlive```
 
-按照下文设置，然后运行
+Follow the setup instructions below, then run the tool.
 
-## 设置
+## Setting up
 
-### 设置环境变量
+### Setting up environment variables
 
-> Mac 用户：如果您无法重命名文件，可以使用 `touch .env` 在同一目录中创建该文件。
+> Mac User: If you are not able to rename the file, you can use `touch .env` to create the file in the same directory as executable file.
 
-1. 下载 [`.env.example`](https://github.com/Ryan0204/cursor-auto-icloud/blob/main/.env.example) 文件并将其重命名为 `.env`
-2. 填写 `.env` 文件
+1. Download [`.env.example`](https://github.com/Ryan0204/cursor-auto-icloud/blob/main/.env.example) file and rename it to `.env`
+2. Fill in the `.env` file
 
 ```env
-ICLOUD_USER=您的苹果ID（!!! 不包括 @icloud.com）
-ICLOUD_APP_PASSWORD=您的苹果ID应用专用密码（解释如下）
-ICLOUD_COOKIES=您的iCloud cookies（解释如下）
+ICLOUD_USER=your_apple_id (!!! without @icloud.com)
+ICLOUD_APP_PASSWORD=your_apple_id_app_specific_password (explained below)
+ICLOUD_COOKIES=your_icloud_cookies (explained below)
 ```
 
-### 获取 iCloud cookie 字符串
+### Getting iCloud cookie string
 
-1. 下载 [Cookie-Editor](https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) Chrome 扩展
-2. 在浏览器中到 [iCloud 设置](https://www.icloud.com/settings/) 并登录
-3. 点击 Cookie-Editor 扩展并以 `Header String` 格式导出 cookies
-4. 将导出的 cookies 粘贴到名为 `.env` 的文件中作为 `ICLOUD_COOKIES`
+1. Download [Cookie-Editor](https://chromewebstore.google.com/detail/cookie-editor/hlkenndednhfkekhgcdicdfddnkalmdm) Chrome extension
+2. Navigate to [iCloud settings](https://www.icloud.com/settings/) in your browser and log in
+3. Click on the Cookie-Editor extension and export cookies with `Header String` format
+4. Paste the exported cookies into a file named `.env` as `ICLOUD_COOKIES`
 
-### 获取 Apple ID 应用专用密码
+Example Cookie:
 
-1. 在 [account.apple.com](https://account.apple.com) 登录您的 Apple 账户
-2. 在登录和安全部分，选择应用专用密码
-3. 选择生成应用专用密码，然后按照屏幕上的步骤操作
-4. 复制生成的密码并将其粘贴到名为 `.env` 的文件中作为 `ICLOUD_APP_PASSWORD`
+```
+X_APPLE_WEB_KB-V5590FJFX4ZYGBSJEZRZBTFB9UU=“xxxxxx”;X-APPLE-DS-WEB-SESSION-TOKEN=“xxxxxx”;X-APPLE-UNIQUE-CLIENT-ID=“xxxxxx”;X-APPLE-WEB-ID=28672BD9012631BA3CBAE022A1DBAEE2D0AFD358;X-APPLE-WEBAUTH-HSA-TRUST=“xxxxxx”;X-APPLE-WEBAUTH-LOGIN=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Cloudkit=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Documents=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Mail=“xxxxxx”;X-APPLE-WEBAUTH-PCS-News=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Notes=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Photos=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Safari=“xxxxxx”;X-APPLE-WEBAUTH-PCS-Sharing=“xxxxxx”;X-APPLE-WEBAUTH-TOKEN=“xxxxxx”;X-APPLE-WEBAUTH-USER=“xxxxxx”;X-APPLE-WEBAUTH-VALIDATE=“xxxxxx”;
+```
 
-## 运行工具
+### Getting Apple ID App Specific Password
 
-### Windows 用户
+1. Sign in to your Apple Account on [account.apple.com](https://account.apple.com)
+2. In the Sign-In and Security section, select App-Specific Passwords.
+3. Select Generate an app-specific password, then follow the steps on your screen.
+4. Copy the generated password and paste it into a file named `.env` as `ICLOUD_APP_PASSWORD`
 
-双击可执行文件运行工具。
+## Running the tool
 
-### Mac 用户
+### Windows User
 
-1. 打开终端
-2. 导航到可执行文件所在的目录
+Double-click the executable file to run the tool.
+
+### Mac User
+
+1. Open Terminal
+2. Navigate to the directory where the executable file is located
 3. `./CursorKeepAlive`
 
-### 请按 `4` 开始自动化流程
+### Please press `4` to start the automation 
 
-## 免责声明
+## Disclaimer
 
-本项目仅为教育目的而创建。作者不对以下情况承担任何责任或义务：
+This project is created solely for educational purposes. The author(s) do not assume any responsibility or liability for:
 
-- 对代码或相关材料的任何滥用
-- 使用本项目产生的任何损害或法律后果
-- 所提供内容的准确性、完整性或实用性
+- Any misuse of the code or related materials.
+- Any damages or legal implications arising from the use of this project.
+- The accuracy, completeness, or usefulness of the provided content.
 
-使用本项目，即表示您同意风险自负。本项目不适用于生产环境，且不提供任何保证或担保。
-如果您有任何法律或道德顾虑，请不要使用此存储库。
+By using this project, you agree that you are doing so at your own risk. This project is not intended for use in production environments, and no warranties or guarantees are provided.
+If you have any legal or ethical concerns, please refrain from using this repository.
 
-## 致谢
+## Credits
 
-如果没有这些出色项目的帮助，本项目將无法完成：
+This project can't be done without the help of these amazing projects:
 
 - [cursor-auto-free](https://github.com/chengazhen/cursor-auto-free)
 - [go-cursor-help](https://github.com/yuaotian/go-cursor-help)
 - [hidemyemail-generator](https://github.com/rtunazzz/hidemyemail-generator)
 
-## 贡献
+## Contributing
 
-如果您想为本项目做出贡献，请随时提交拉取请求。
+If you want to contribute to this project, please feel free to open a pull request.
 
-## 许可证
+## License
 
-本产品根据专有许可证分发。您可以在以下链接查看完整的许可协议：[CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/)。
+This product is distributed under a proprietary license. You can review the full license agreement at the following link: [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/).

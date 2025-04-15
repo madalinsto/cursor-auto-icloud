@@ -11,6 +11,23 @@ import sys
 import tempfile
 from typing import Tuple
 
+# Add parent directory to path to import language module
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+try:
+    from src.utils.language import getTranslation, _
+except ImportError:
+    try:
+        from utils.language import getTranslation, _
+    except ImportError:
+        # Fallback if language module is not available
+        def getTranslation(key, *args):
+            if args:
+                return key.format(*args)
+            return key
+
 
 # 配置日志
 def setup_logging() -> logging.Logger:
@@ -62,24 +79,24 @@ def get_cursor_paths() -> Tuple[str, str]:
     }
 
     if system not in paths_map:
-        raise OSError(f"不支持的操作系统: {system}")
+        raise OSError(getTranslation("unsupported_os").format(system))
 
     if system == "Linux":
         for base in paths_map["Linux"]["bases"]:
             pkg_path = os.path.join(base, paths_map["Linux"]["package"])
             if os.path.exists(pkg_path):
                 return (pkg_path, os.path.join(base, paths_map["Linux"]["main"]))
-        raise OSError("在 Linux 系统上未找到 Cursor 安装路径")
+        raise OSError(getTranslation("cursor_path_not_found_linux"))
 
     base_path = paths_map[system]["base"]
     # 判断Windows是否存在这个文件夹,如果不存在,提示需要创建软连接后重试
     if system  == "Windows":
         if not os.path.exists(base_path):
-            logging.info('可能您的Cursor不是默认安装路径,请创建软连接,命令如下:')
-            logging.info('cmd /c mklink /d "C:\\Users\\<username>\\AppData\\Local\\Programs\\Cursor" "默认安装路径"')
-            logging.info('例如:')
-            logging.info('cmd /c mklink /d "C:\\Users\\<username>\\AppData\\Local\\Programs\\Cursor" "D:\\SoftWare\\cursor"')
-            input("\n程序执行完毕，按回车键退出...")
+            logging.info(getTranslation("cursor_path_not_default"))
+            logging.info(getTranslation("create_symlink_command"))
+            logging.info(getTranslation("example_command"))
+            logging.info(getTranslation("example_command_path"))
+            input(getTranslation("press_enter_exit"))
     return (
         os.path.join(base_path, paths_map[system]["package"]),
         os.path.join(base_path, paths_map[system]["main"]),
@@ -99,11 +116,11 @@ def check_system_requirements(pkg_path: str, main_path: str) -> bool:
     """
     for file_path in [pkg_path, main_path]:
         if not os.path.isfile(file_path):
-            logger.error(f"文件不存在: {file_path}")
+            logger.error(getTranslation("file_not_exist").format(file_path))
             return False
 
         if not os.access(file_path, os.W_OK):
-            logger.error(f"没有文件写入权限: {file_path}")
+            logger.error(getTranslation("file_no_write_permission").format(file_path))
             return False
 
     return True
@@ -124,7 +141,7 @@ def version_check(version: str, min_version: str = "", max_version: str = "") ->
     version_pattern = r"^\d+\.\d+\.\d+$"
     try:
         if not re.match(version_pattern, version):
-            logger.error(f"无效的版本号格式: {version}")
+            logger.error(getTranslation("invalid_version_format").format(version))
             return False
 
         def parse_version(ver: str) -> Tuple[int, ...]:
@@ -133,17 +150,17 @@ def version_check(version: str, min_version: str = "", max_version: str = "") ->
         current = parse_version(version)
 
         if min_version and current < parse_version(min_version):
-            logger.error(f"版本号 {version} 小于最小要求 {min_version}")
+            logger.error(getTranslation("version_below_minimum").format(version, min_version))
             return False
 
         if max_version and current > parse_version(max_version):
-            logger.error(f"版本号 {version} 大于最大要求 {max_version}")
+            logger.error(getTranslation("version_above_maximum").format(version, max_version))
             return False
 
         return True
 
     except Exception as e:
-        logger.error(f"版本检查失败: {str(e)}")
+        logger.error(getTranslation("version_check_failed").format(str(e)))
         return False
 
 
@@ -189,11 +206,11 @@ def modify_main_js(main_path: str) -> bool:
         if os.name != "nt":  # 在非Windows系统上设置所有者
             os.chown(main_path, original_uid, original_gid)
 
-        logger.info("文件修改成功")
+        logger.info(getTranslation("file_modified_success"))
         return True
 
     except Exception as e:
-        logger.error(f"修改文件时发生错误: {str(e)}")
+        logger.error(getTranslation("file_modification_error").format(str(e)))
         if "tmp_path" in locals():
             os.unlink(tmp_path)
         return False
@@ -215,11 +232,11 @@ def backup_files(pkg_path: str, main_path: str) -> bool:
         if os.path.exists(main_path):
             backup_main = f"{main_path}.bak"
             shutil.copy2(main_path, backup_main)
-            logger.info(f"已备份 main.js: {backup_main}")
+            logger.info(getTranslation("mainjs_backup_created").format(backup_main))
 
         return True
     except Exception as e:
-        logger.error(f"备份文件失败: {str(e)}")
+        logger.error(getTranslation("backup_failed").format(str(e)))
         return False
 
 
@@ -239,13 +256,13 @@ def restore_backup_files(pkg_path: str, main_path: str) -> bool:
         backup_main = f"{main_path}.bak"
         if os.path.exists(backup_main):
             shutil.copy2(backup_main, main_path)
-            logger.info(f"已恢复 main.js")
+            logger.info(getTranslation("mainjs_restored"))
             return True
 
-        logger.error("未找到备份文件")
+        logger.error(getTranslation("backup_not_found"))
         return False
     except Exception as e:
-        logger.error(f"恢复备份失败: {str(e)}")
+        logger.error(getTranslation("restore_backup_failed").format(str(e)))
         return False
 
 
@@ -256,7 +273,7 @@ def patch_cursor_get_machine_id(restore_mode=False) -> None:
     Args:
         restore_mode: 是否为恢复模式
     """
-    logger.info("开始执行脚本...")
+    logger.info(getTranslation("script_execution_started"))
 
     try:
         # 获取路径
@@ -269,40 +286,40 @@ def patch_cursor_get_machine_id(restore_mode=False) -> None:
         if restore_mode:
             # 恢复备份
             if restore_backup_files(pkg_path, main_path):
-                logger.info("备份恢复完成")
+                logger.info(getTranslation("backup_restore_complete"))
             else:
-                logger.error("备份恢复失败")
+                logger.error(getTranslation("backup_restore_failed"))
             return
 
         # 获取版本号
         try:
             with open(pkg_path, "r", encoding="utf-8") as f:
                 version = json.load(f)["version"]
-            logger.info(f"当前 Cursor 版本: {version}")
+            logger.info(getTranslation("current_cursor_version").format(version))
         except Exception as e:
-            logger.error(f"无法读取版本号: {str(e)}")
+            logger.error(getTranslation("reading_version_failed").format(str(e)))
             sys.exit(1)
 
         # 检查版本
         if not version_check(version, min_version="0.45.0"):
-            logger.error("版本不符合要求（需 >= 0.45.x）")
+            logger.error(getTranslation("version_not_supported"))
             sys.exit(1)
 
-        logger.info("版本检查通过，准备修改文件")
+        logger.info(getTranslation("version_check_passed"))
 
         # 备份文件
         if not backup_files(pkg_path, main_path):
-            logger.error("文件备份失败，终止操作")
+            logger.error(getTranslation("backup_failed_abort"))
             sys.exit(1)
 
         # 修改文件
         if not modify_main_js(main_path):
             sys.exit(1)
 
-        logger.info("脚本执行完成")
+        logger.info(getTranslation("script_execution_complete"))
 
     except Exception as e:
-        logger.error(f"执行过程中发生错误: {str(e)}")
+        logger.error(getTranslation("execution_error").format(str(e)))
         sys.exit(1)
 
 

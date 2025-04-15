@@ -2,6 +2,16 @@ import sqlite3
 import os
 import sys
 
+# Add parent directory to path to import language module
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+try:
+    from src.utils.language import getTranslation, _
+except ImportError:
+    from utils.language import getTranslation, _
+
 
 class CursorAuthManager:
     """Cursor认证信息管理器"""
@@ -11,7 +21,7 @@ class CursorAuthManager:
         if sys.platform == "win32":  # Windows
             appdata = os.getenv("APPDATA")
             if appdata is None:
-                raise EnvironmentError("APPDATA 环境变量未设置")
+                raise EnvironmentError(getTranslation("appdata_not_set"))
             self.db_path = os.path.join(
                 appdata, "Cursor", "User", "globalStorage", "state.vscdb"
             )
@@ -24,7 +34,7 @@ class CursorAuthManager:
                 "~/.config/Cursor/User/globalStorage/state.vscdb"
             ))
         else:
-            raise NotImplementedError(f"不支持的操作系统: {sys.platform}")
+            raise NotImplementedError(getTranslation("unsupported_os").format(sys.platform))
 
     def update_auth(self, email=None, access_token=None, refresh_token=None):
         """
@@ -46,7 +56,7 @@ class CursorAuthManager:
             updates.append(("cursorAuth/refreshToken", refresh_token))
 
         if not updates:
-            print("没有提供任何要更新的值")
+            print(getTranslation("no_values_to_update"))
             return False
 
         conn = None
@@ -68,18 +78,18 @@ class CursorAuthManager:
                     cursor.execute(update_query, (value, key))
 
                 if cursor.rowcount > 0:
-                    print(f"成功更新 {key.split('/')[-1]}")
+                    print(getTranslation("value_updated_success").format(key.split('/')[-1]))
                 else:
-                    print(f"未找到 {key.split('/')[-1]} 或值未变化")
+                    print(getTranslation("value_not_found_or_unchanged").format(key.split('/')[-1]))
 
             conn.commit()
             return True
 
         except sqlite3.Error as e:
-            print("数据库错误:", str(e))
+            print(getTranslation("database_error").format(str(e)))
             return False
         except Exception as e:
-            print("发生错误:", str(e))
+            print(getTranslation("general_error").format(str(e)))
             return False
         finally:
             if conn:
