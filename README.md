@@ -1,4 +1,4 @@
-# Cursor Pro (iCloud) Automation Tool - Free Trail Reset Tool
+# Cursor Pro (iCloud) Automation Tool - Free Trial Reset Tool
 
 <div align="center">
 
@@ -31,7 +31,7 @@
 
 You should have following items before using this tool:
 
-- An apple account with **iCloud Plus**
+- An apple account (with @icloud.com as suffix) with **iCloud Plus**
 
 ## Download
 
