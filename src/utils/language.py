@@ -926,6 +926,99 @@ class LanguageManager:
                 Language.ENGLISH: "Maximum attempts reached ({0}), failed to get session token",
                 Language.CHINESE: "已达到最大尝试次数({0})，获取会话令牌失败"
             },
+            # Email deletion translations
+            "no_emails_found": {
+                Language.ENGLISH: "No emails found in iCloud account",
+                Language.CHINESE: "在 iCloud 账户中找不到邮箱"
+            },
+            "email_not_found": {
+                Language.ENGLISH: "Email not found: {0}",
+                Language.CHINESE: "未找到邮箱: {0}"
+            },
+            "email_deleted_success": {
+                Language.ENGLISH: "Email deleted successfully: {0}",
+                Language.CHINESE: "邮箱删除成功: {0}"
+            },
+            "email_deletion_failed": {
+                Language.ENGLISH: "Email deletion failed: {0}",
+                Language.CHINESE: "邮箱删除失败: {0}"
+            },
+            "no_emails_to_delete": {
+                Language.ENGLISH: "No emails specified for deletion",
+                Language.CHINESE: "未指定要删除的邮箱"
+            },
+            "email_deletion_error": {
+                Language.ENGLISH: "Error during email deletion: {0}",
+                Language.CHINESE: "删除邮箱过程中发生错误: {0}"
+            },
+            "deleting_emails": {
+                Language.ENGLISH: "Deleting {0} email(s)...",
+                Language.CHINESE: "正在删除 {0} 个邮箱..."
+            },
+            "success": {
+                Language.ENGLISH: "Success",
+                Language.CHINESE: "成功"
+            },
+            "failed": {
+                Language.ENGLISH: "Failed",
+                Language.CHINESE: "失败"
+            },
+            "no_emails_specified": {
+                Language.ENGLISH: "No emails specified. Usage: deleteEmail.py email1@example.com [email2@example.com ...]",
+                Language.CHINESE: "未指定邮箱。用法: deleteEmail.py email1@example.com [email2@example.com ...]"
+            },
+            "delete_email_not_available": {
+                Language.ENGLISH: "Email deletion function not available",
+                Language.CHINESE: "邮箱删除功能不可用"
+            },
+            "deleting_generated_email": {
+                Language.ENGLISH: "Deleting generated email: {0}",
+                Language.CHINESE: "正在删除生成的邮箱: {0}"
+            },
+            "delete_email_no_result": {
+                Language.ENGLISH: "No result received from email deletion",
+                Language.CHINESE: "未收到邮箱删除结果"
+            },
+            "delete_email_exception": {
+                Language.ENGLISH: "Error occurred while deleting email: {0}",
+                Language.CHINESE: "删除邮箱时发生错误: {0}"
+            },
+            "delete_after_use_enabled": {
+                Language.ENGLISH: "Delete email after use option enabled",
+                Language.CHINESE: "已启用使用后删除邮箱选项"
+            },
+            "deleting_icloud_email_after_use": {
+                Language.ENGLISH: "Deleting iCloud email after successful registration",
+                Language.CHINESE: "注册成功后删除 iCloud 邮箱"
+            },
+            "delete_email_prompt": {
+                Language.ENGLISH: "Delete iCloud email after successful registration?",
+                Language.CHINESE: "注册成功后删除 iCloud 邮箱?"
+            },
+            "delete_after_use_disabled": {
+                Language.ENGLISH: "Keep email after use option selected",
+                Language.CHINESE: "已选择保留邮箱选项"
+            },
+            "deactivating_email": {
+                Language.ENGLISH: "Deactivating email with ID: {0}",
+                Language.CHINESE: "正在停用ID为 {0} 的邮箱"
+            },
+            "deactivate_email_timeout": {
+                Language.ENGLISH: "Timeout while trying to deactivate email",
+                Language.CHINESE: "停用邮箱时超时"
+            },
+            "deactivate_email_failed": {
+                Language.ENGLISH: "Failed to deactivate email: {0}",
+                Language.CHINESE: "停用邮箱失败: {0}"
+            },
+            "email_deactivation_failed": {
+                Language.ENGLISH: "Email deactivation failed: {0}",
+                Language.CHINESE: "邮箱停用失败: {0}"
+            },
+            "email_missing_id": {
+                Language.ENGLISH: "Email is missing anonymousId: {0}",
+                Language.CHINESE: "邮箱缺少匿名ID: {0}"
+            },
         }
     
     def get_text(self, key: str, *args) -> str:

@@ -19,6 +19,8 @@ import src.core.go_cursor_help as go_cursor_help
 import src.auth.patch_cursor_get_machine_id as patch_cursor_get_machine_id
 from src.auth.reset_machine import MachineIDResetter
 
+from src.icloud.generateEmail import generateIcloudEmail
+from src.icloud.deleteEmail import deleteIcloudEmail
 
 os.environ["PYTHONVERBOSE"] = "0"
 os.environ["PYINSTALLER_VERBOSE"] = "0"
@@ -376,9 +378,8 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
             usage_info = usage_ele.text
             total_usage = usage_info.split("/")[-1].strip()
             logging.info(getTranslation("account_usage_limit").format(total_usage))
-            logging.info(
-                "请前往开源项目查看更多信息：https://github.com/Ryan0204/cursor-auto-icloud"
-            )
+            logging.info(getTranslation("visit_project_for_info"))
+
     except Exception as e:
         logging.error(getTranslation("get_account_limit_failed").format(str(e)))
 
@@ -419,6 +420,7 @@ class EmailGenerator:
             )
         ),
         use_icloud=False,
+        delete_after_use=False
     ):
         configInstance = Config()
         configInstance.print_config()
@@ -427,7 +429,10 @@ class EmailGenerator:
         self.default_first_name = self.generate_random_name()
         self.default_last_name = self.generate_random_name()
         self.use_icloud = use_icloud
+        self.delete_after_use = delete_after_use
+        self.generated_email = None
         self.generateIcloudEmail = None
+        self.deleteIcloudEmail = None
         
         # Try to load dotenv config if exists
         try:
@@ -438,9 +443,11 @@ class EmailGenerator:
         # Try to import iCloud email generator if use_icloud is True
         if self.use_icloud:
             try:
-                # Import the module from the correct location
+                # Import the modules from the correct location
                 from src.icloud.generateEmail import generateIcloudEmail
+                from src.icloud.deleteEmail import deleteIcloudEmail
                 self.generateIcloudEmail = generateIcloudEmail
+                self.deleteIcloudEmail = deleteIcloudEmail
                 logging.info(getTranslation("icloud_feature_enabled"))
             except ImportError:
                 try:
@@ -449,7 +456,9 @@ class EmailGenerator:
                     if current_dir not in sys.path:
                         sys.path.append(current_dir)
                     from icloud.generateEmail import generateIcloudEmail
+                    from icloud.deleteEmail import deleteIcloudEmail
                     self.generateIcloudEmail = generateIcloudEmail
+                    self.deleteIcloudEmail = deleteIcloudEmail
                     logging.info(getTranslation("icloud_feature_enabled"))
                 except ImportError:
                     logging.error(getTranslation("icloud_module_import_failed_local"))
@@ -525,7 +534,8 @@ class EmailGenerator:
             try:
                 emails = self.generateIcloudEmail(1, True)
                 if emails and len(emails) > 0:
-                    return emails[0]
+                    self.generated_email = emails[0]
+                    return self.generated_email
                 else:
                     logging.warning(getTranslation("icloud_email_gen_failed"))
             except Exception as e:
@@ -554,17 +564,51 @@ class EmailGenerator:
                 sys.exit(1)
                     
             first_email = lines[0].strip()
+            self.generated_email = first_email
             
             # Write remaining emails back to file
             with open(emails_file_path, "w") as f:
                 f.writelines(lines[1:])
                 
-            return first_email
+            return self.generated_email
         except Exception as e:
             logging.error(getTranslation("email_file_read_error").format(str(e)))
             logging.warning(getTranslation("email_list_empty"))
             sys.exit(1)
 
+    def delete_generated_email(self):
+        """
+        Delete the generated iCloud email if delete_after_use is enabled
+        
+        Returns:
+            bool: True if deletion was successful or not needed, False otherwise
+        """
+        if not self.use_icloud or not self.delete_after_use or not self.generated_email:
+            return True
+            
+        if not self.deleteIcloudEmail:
+            logging.warning(getTranslation("delete_email_not_available"))
+            return False
+            
+        try:
+            logging.info(getTranslation("deleting_generated_email").format(self.generated_email))
+            results = self.deleteIcloudEmail(self.generated_email)
+            
+            if results and len(results) > 0:
+                email, success, message = results[0]
+                if success:
+                    logging.info(message)
+                    return True
+                else:
+                    logging.error(message)
+                    return False
+            else:
+                logging.error(getTranslation("delete_email_no_result"))
+                return False
+        except Exception as e:
+            logging.error(getTranslation("delete_email_exception").format(str(e)))
+            return False
+            
     def get_account_info(self):
         """获取完整的账号信息"""
         return {
@@ -703,6 +747,18 @@ def main():
             else:
                 break  # Exit the menu loop and proceed with the selected option
 
+        # Set delete_icloud_email_after_use based on user choice if using iCloud
+        delete_icloud_email_after_use = False
+        if choice == 4:  # If using iCloud email
+            # Ask user if they want to delete the email after use
+            delete_prompt = input(getTranslation("delete_email_prompt") + " (Y/N) [Y]: ").strip().upper()
+            # Default is Yes (empty or Y)
+            delete_icloud_email_after_use = delete_prompt != "N"
+            if delete_icloud_email_after_use:
+                logging.info(getTranslation("delete_after_use_enabled"))
+            else:
+                logging.info(getTranslation("delete_after_use_disabled"))
+
         if choice == 1:
             # 仅执行重置机器码
             reset_machine_id(greater_than_0_45)
@@ -771,7 +827,7 @@ def main():
 
         # 使用 iCloud 隐藏邮箱 if choice is 4
         use_icloud = (choice == 4)
-        email_generator = EmailGenerator(use_icloud=use_icloud)
+        email_generator = EmailGenerator(use_icloud=use_icloud, delete_after_use=delete_icloud_email_after_use)
         first_name = email_generator.default_first_name
         last_name = email_generator.default_last_name
         account = email_generator.generate_email()
@@ -809,6 +865,12 @@ def main():
                 update_cursor_auth(
                     email=account, access_token=access_token, refresh_token=refresh_token
                 )
+                
+                # Delete iCloud email if option is enabled
+                if use_icloud and delete_icloud_email_after_use:
+                    logging.info(getTranslation("deleting_icloud_email_after_use"))
+                    email_generator.delete_generated_email()
+                
                 logging.info(getTranslation("visit_project_for_info"))
                 logging.info(getTranslation("resetting_machine_code"))
                 reset_machine_id(greater_than_0_45)
