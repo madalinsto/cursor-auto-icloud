@@ -3,11 +3,16 @@ import platform
 import json
 import sys
 import csv
+import uuid
+import secrets
+import hashlib
+import base64
 from pathlib import Path
 import dotenv
+import requests
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, Tuple
 
 from src.core.exit_cursor import ExitCursor
 import src.core.go_cursor_help as go_cursor_help
@@ -166,38 +171,91 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
         raise TurnstileError(error_msg)
 
 
-def get_cursor_session_token(tab, max_attempts=3, retry_interval=2):
-    """
-    获取Cursor会话token，带有重试机制
-    :param tab: 浏览器标签页
-    :param max_attempts: 最大尝试次数
-    :param retry_interval: 重试间隔(秒)
-    :return: session token 或 None
-    """
-    logging.info(getTranslation("getting_cookies"))
-    attempts = 0
 
+def get_cursor_session_token(tab, max_attempts: int = 3, retry_interval: int = 2) -> Optional[Tuple[str, str]]:
+    """
+    获取Cursor会话token
+    
+    Args:
+        tab: 浏览器标签页对象
+        max_attempts: 最大尝试次数
+        retry_interval: 重试间隔(秒)
+        
+    Returns:
+        Tuple[str, str] | None: 成功返回(userId, accessToken)元组，失败返回None
+    """
+    logging.info(getTranslation("start_getting_session_token"))
+    
+    # 首先尝试使用UUID深度登录方式
+    logging.info(getTranslation("try_deep_login"))
+    
+    def _generate_pkce_pair():
+        """生成PKCE验证对"""
+        code_verifier = secrets.token_urlsafe(43)
+        code_challenge_digest = hashlib.sha256(code_verifier.encode('utf-8')).digest()
+        code_challenge = base64.urlsafe_b64encode(code_challenge_digest).decode('utf-8').rstrip('=')    
+        return code_verifier, code_challenge
+    
+    attempts = 0
     while attempts < max_attempts:
         try:
-            cookies = tab.cookies()
-            for cookie in cookies:
-                if cookie.get("name") == "WorkosCursorSessionToken":
-                    return cookie["value"].split("%3A%3A")[1]
-
-            attempts += 1
-            if attempts < max_attempts:
-                logging.warning(getTranslation("token_attempt_failed").format(attempts, retry_interval))
-                time.sleep(retry_interval)
+            verifier, challenge = _generate_pkce_pair()
+            id = uuid.uuid4()
+            client_login_url = f"https://www.cursor.com/cn/loginDeepControl?challenge={challenge}&uuid={id}&mode=login"
+            
+            logging.info(getTranslation("visiting_deep_login_url").format(client_login_url))
+            tab.get(client_login_url)
+            save_screenshot(tab, f"deeplogin_attempt_{attempts}")
+            
+            if tab.ele("xpath=//span[contains(text(), 'Yes, Log In')]", timeout=5):
+                logging.info(getTranslation("clicking_confirm_login"))
+                tab.ele("xpath=//span[contains(text(), 'Yes, Log In')]").click()
+                time.sleep(1.5)
+                
+                auth_poll_url = f"https://api2.cursor.sh/auth/poll?uuid={id}&verifier={verifier}"
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Cursor/0.48.6 Chrome/132.0.6834.210 Electron/34.3.4 Safari/537.36",
+                    "Accept": "*/*"
+                }
+                
+                logging.info(getTranslation("polling_auth_status").format(auth_poll_url))
+                response = requests.get(auth_poll_url, headers=headers, timeout=5)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    accessToken = data.get("accessToken", None)
+                    authId = data.get("authId", "")
+                    
+                    if accessToken:
+                        userId = ""
+                        if len(authId.split("|")) > 1:
+                            userId = authId.split("|")[1]
+                        
+                        logging.info(getTranslation("token_userid_success"))
+                        return userId, accessToken
+                else:
+                    logging.error(getTranslation("api_request_failed").format(response.status_code))
             else:
-                logging.error(getTranslation("token_max_attempts").format(max_attempts))
-
-        except Exception as e:
-            logging.error(getTranslation("get_cookie_failed").format(str(e)))
+                logging.warning(getTranslation("login_confirm_button_not_found"))
+                
             attempts += 1
             if attempts < max_attempts:
-                logging.info(getTranslation("retry_in_seconds").format(retry_interval))
-                time.sleep(retry_interval)
-
+                wait_time = retry_interval * attempts  # 逐步增加等待时间
+                logging.warning(getTranslation("token_attempt_failed").format(attempts, wait_time))
+                save_screenshot(tab, f"token_attempt_{attempts}")
+                time.sleep(wait_time)
+                
+        except Exception as e:
+            logging.error(getTranslation("deep_login_token_failed").format(str(e)))
+            attempts += 1
+            save_screenshot(tab, f"token_error_{attempts}")
+            if attempts < max_attempts:
+                wait_time = retry_interval * attempts
+                logging.warning(getTranslation("retry_in_seconds").format(wait_time))
+                time.sleep(wait_time)
+    
+    # 所有尝试都失败后返回None
+    logging.error(getTranslation("max_attempts_reached").format(max_attempts))
     return None
 
 
@@ -579,7 +637,7 @@ def save_account_to_csv(account_info, csv_path="accounts.csv"):
         os.makedirs(os.path.dirname(os.path.abspath(csv_path)), exist_ok=True)
         
         with open(file_path, mode='a', newline='') as file:
-            fieldnames = ['created_date', 'email', 'password', 'token', 'first_name', 'last_name']
+            fieldnames = ['created_date', 'email', 'password', 'access_token', 'refresh_token', 'first_name', 'last_name']
             writer = csv.DictWriter(file, fieldnames=fieldnames)
             
             # Write headers if file doesn't exist
@@ -736,19 +794,20 @@ def main():
 
         if sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler):
             logging.info(getTranslation("getting_session_token"))
-            token = get_cursor_session_token(tab)
-            if token:
+            access_token, refresh_token = get_cursor_session_token(tab)
+            if access_token and refresh_token:
                 account_info = {
                     'email': account,
                     'password': password,
-                    'token': token,
+                    'access_token': access_token,
+                    'refresh_token': refresh_token,
                     'first_name': first_name,
                     'last_name': last_name
                 }
                 save_account_to_csv(account_info)
                 logging.info(getTranslation("updating_auth_info"))
                 update_cursor_auth(
-                    email=account, access_token=token, refresh_token=token
+                    email=account, access_token=access_token, refresh_token=refresh_token
                 )
                 logging.info(getTranslation("visit_project_for_info"))
                 logging.info(getTranslation("resetting_machine_code"))
