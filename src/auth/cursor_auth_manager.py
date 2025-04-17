@@ -51,7 +51,7 @@ class CursorAuthManager:
         if email is not None:
             updates.append(("cursorAuth/cachedEmail", email))
         if access_token is not None:
-            updates.append(("cursorAuth/accessToken", access_token))
+            updates.append(("cursorAuth/accessToken", refresh_token))
         if refresh_token is not None:
             updates.append(("cursorAuth/refreshToken", refresh_token))
 
