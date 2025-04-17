@@ -275,12 +275,12 @@ class LanguageManager:
             
             # End messages
             "program_execution_error": {
-                Language.ENGLISH: "Program execution error: {0}",
-                Language.CHINESE: "程序执行出现错误: {0}"
+                Language.ENGLISH: "Error during program execution: {0}",
+                Language.CHINESE: "程序执行过程中出错: {0}"
             },
             "program_complete": {
-                Language.ENGLISH: "\nProgram execution complete, press Enter to exit...",
-                Language.CHINESE: "\n程序执行完毕，按回车键退出..."
+                Language.ENGLISH: "Press Enter to exit...",
+                Language.CHINESE: "按回车键退出..."
             },
             "operation_complete": {
                 Language.ENGLISH: "\n\n\n\n\n\n============================\nAll operations complete\n\n=== Get More Information ===\nPlease visit the open source project for more information: https://github.com/Ryan0204/cursor-auto-icloud",
@@ -871,6 +871,60 @@ class LanguageManager:
             "email_body_decode_failed": {
                 Language.ENGLISH: "Failed to decode email body: {0}",
                 Language.CHINESE: "解码邮件正文失败: {0}"
+            },
+            # Token refresh translations
+            "token_refresh_success": {
+                Language.ENGLISH: "Successfully refreshed token",
+                Language.CHINESE: "成功刷新令牌"
+            },
+            "token_refresh_failed": {
+                Language.ENGLISH: "Failed to refresh token: {0}",
+                Language.CHINESE: "刷新令牌失败: {0}"
+            },
+            "token_refresh_exception": {
+                Language.ENGLISH: "Exception during token refresh: {0}",
+                Language.CHINESE: "刷新令牌过程中发生异常: {0}"
+            },
+            # New translations for get_cursor_session_token function
+            "start_getting_session_token": {
+                Language.ENGLISH: "Starting to get session token",
+                Language.CHINESE: "开始获取会话令牌"
+            },
+            "try_deep_login": {
+                Language.ENGLISH: "Trying to get token using deep login method",
+                Language.CHINESE: "尝试使用深度登录方式获取token"
+            },
+            "visiting_deep_login_url": {
+                Language.ENGLISH: "Visiting deep login URL: {0}",
+                Language.CHINESE: "访问深度登录URL: {0}"
+            },
+            "clicking_confirm_login": {
+                Language.ENGLISH: "Clicking login confirmation button",
+                Language.CHINESE: "点击确认登录按钮"
+            },
+            "polling_auth_status": {
+                Language.ENGLISH: "Polling authentication status: {0}",
+                Language.CHINESE: "轮询认证状态: {0}"
+            },
+            "token_userid_success": {
+                Language.ENGLISH: "Successfully obtained account token and userId",
+                Language.CHINESE: "成功获取账号token和userId"
+            },
+            "api_request_failed": {
+                Language.ENGLISH: "API request failed with status code: {0}",
+                Language.CHINESE: "API请求失败，状态码: {0}"
+            },
+            "login_confirm_button_not_found": {
+                Language.ENGLISH: "Login confirmation button not found",
+                Language.CHINESE: "未找到登录确认按钮"
+            },
+            "deep_login_token_failed": {
+                Language.ENGLISH: "Deep login token acquisition failed: {0}",
+                Language.CHINESE: "深度登录获取token失败: {0}"
+            },
+            "max_attempts_reached": {
+                Language.ENGLISH: "Maximum attempts reached ({0}), failed to get session token",
+                Language.CHINESE: "已达到最大尝试次数({0})，获取会话令牌失败"
             },
         }
     
