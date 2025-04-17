@@ -128,18 +128,40 @@ class HideMyEmail:
             logging.error(getTranslation("list_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
 
-
-    async def delete_email(self, email: str) -> dict:
-        """Deletes an email"""
-        logging.info(getTranslation("deleting_email").format(email))
+    async def deactivate_email(self, anonymous_id: str) -> dict:
+        """Deactivates an email using its anonymousId"""
+        logging.info(getTranslation("deactivating_email").format(anonymous_id))
         try: 
-            async with self.s.post(f"{self.base_url_v1}/delete", params=self.params, json={"hme": email}) as resp:
+            async with self.s.post(f"{self.base_url_v1}/deactivate", params=self.params, json={"anonymousId": anonymous_id}) as resp:
                 res = await resp.json()
+                return res
+        except asyncio.TimeoutError:
+            logging.error(getTranslation("deactivate_email_timeout"))
+            return {"error": 1, "reason": getTranslation("request_timeout")}
+        except Exception as e:
+            logging.error(getTranslation("deactivate_email_failed").format(str(e)))
+            return {"error": 1, "reason": str(e)}
+
+    async def delete_email(self, anonymous_id: str, email: str = None) -> dict:
+        """Deletes an email using its anonymousId
+        
+        Args:
+            anonymous_id: The anonymousId of the email to delete
+            email: Optional email address (for logging purposes only)
+        """
+        log_identifier = email if email else anonymous_id
+        logging.info(getTranslation("deleting_email").format(log_identifier))
+        try: 
+            payload = {"anonymousId": anonymous_id}
+            async with self.s.post(f"{self.base_url_v1}/delete", params=self.params, json=payload) as resp:
+                res = await resp.json()
+                print(res)
                 return res
         except asyncio.TimeoutError:
             logging.error(getTranslation("delete_email_timeout"))
             return {"error": 1, "reason": getTranslation("request_timeout")}
         except Exception as e:
+            print(e)
             logging.error(getTranslation("delete_email_failed").format(str(e)))
             return {"error": 1, "reason": str(e)}
         
