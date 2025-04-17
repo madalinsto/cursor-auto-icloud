@@ -673,7 +673,7 @@ def main():
     
     try:
         logging.info(getTranslation("program_init"))
-        # ExitCursor()
+        ExitCursor()
 
         # Main menu loop to handle language switching
         while True:
