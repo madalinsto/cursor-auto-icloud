@@ -307,7 +307,7 @@ class EmailVerificationHandler:
             return None
             
         except Exception as e:
-            if 'NoneType' in str(e) and "object has no attribute 'split'" in str(e):
+            if isinstance(e, AttributeError) and "'NoneType' object has no attribute 'split'" in str(e):
                 logging.error(getTranslation("none_type_attribute_error"))
                 return None
             logging.error(getTranslation("icloud_imap_operation_failed").format(e))
