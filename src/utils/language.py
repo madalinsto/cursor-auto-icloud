@@ -175,6 +175,36 @@ class LanguageManager:
                 Language.CHINESE: "获取会话令牌失败，注册流程未完成"
             },
             
+            # Spam folder related translations
+            "checking_spam_folders": {
+                Language.ENGLISH: "Verification code not found in inbox, checking spam/junk folders...",
+                Language.CHINESE: "收件箱中未找到验证码，正在检查垃圾邮件文件夹..."
+            },
+            "icloud_folder_list_failed": {
+                Language.ENGLISH: "Failed to retrieve folder list from iCloud",
+                Language.CHINESE: "无法获取iCloud文件夹列表"
+            },
+            "checking_folder": {
+                Language.ENGLISH: "Checking folder: {0}",
+                Language.CHINESE: "正在检查文件夹: {0}"
+            },
+            "verification_code_found_in_spam": {
+                Language.ENGLISH: "Verification code found in spam: {0} (folder: {1})",
+                Language.CHINESE: "垃圾邮件文件夹中找到验证码: {0} (文件夹: {1})"
+            },
+            "error_checking_folder": {
+                Language.ENGLISH: "Error checking folder {0}: {1}",
+                Language.CHINESE: "检查文件夹 {0} 时出错: {1}"
+            },
+            "no_verification_code_in_spam": {
+                Language.ENGLISH: "No verification code found in spam folders",
+                Language.CHINESE: "垃圾邮件文件夹中未找到验证码"
+            },
+            "spam_folder_check_failed": {
+                Language.ENGLISH: "Spam folder check failed: {0}",
+                Language.CHINESE: "垃圾邮件文件夹检查失败: {0}"
+            },
+            
             # Sign-up process specific
             "filling_personal_info": {
                 Language.ENGLISH: "Filling personal information...",
@@ -845,8 +875,8 @@ class LanguageManager:
                 Language.CHINESE: "获取 iCloud 邮件列表失败: {0}"
             },
             "no_emails_in_icloud": {
-                Language.ENGLISH: "No emails found in iCloud mailbox",
-                Language.CHINESE: "iCloud 邮箱中没有找到邮件"
+                Language.ENGLISH: "No emails found in iCloud folder: {0}",
+                Language.CHINESE: "在iCloud文件夹中没有找到邮件: {0}"
             },
             "icloud_imap_fetch_failed": {
                 Language.ENGLISH: "iCloud IMAP fetch failed: {0}",
@@ -871,6 +901,31 @@ class LanguageManager:
             "email_body_decode_failed": {
                 Language.ENGLISH: "Failed to decode email body: {0}",
                 Language.CHINESE: "解码邮件正文失败: {0}"
+            },
+            "none_type_attribute_error": {
+                Language.ENGLISH: "INBOX is empty, checking other folders",
+                Language.CHINESE: "INBOX是空的，现在检查其他文件夹"
+            },
+            # New IMAP error handling translations
+            "checking_imap_folder": {
+                Language.ENGLISH: "Checking IMAP folder: {0}",
+                Language.CHINESE: "正在检查IMAP文件夹: {0}"
+            },
+            "empty_messages_response": {
+                Language.ENGLISH: "IMAP server returned empty messages response",
+                Language.CHINESE: "IMAP服务器返回了空的邮件响应"
+            },
+            "empty_first_message_item": {
+                Language.ENGLISH: "IMAP server returned empty first message item",
+                Language.CHINESE: "IMAP服务器返回了空的第一条邮件项"
+            },
+            "unexpected_message_type": {
+                Language.ENGLISH: "Unexpected message type from IMAP server: {0}",
+                Language.CHINESE: "IMAP服务器返回了意外的邮件类型: {0}"
+            },
+            "inbox_empty_error": {
+                Language.ENGLISH: "Inbox is empty - no emails in folder: {0}",
+                Language.CHINESE: "收件箱是空的 - 文件夹中没有邮件: {0}"
             },
             # Token refresh translations
             "token_refresh_success": {
