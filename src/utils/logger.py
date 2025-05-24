@@ -1,6 +1,20 @@
 import logging
 import os
+import sys
 from datetime import datetime
+
+# Import translation utilities
+try:
+    from src.utils.language import getTranslation, _
+except ImportError:
+    try:
+        from utils.language import getTranslation, _
+    except ImportError:
+        # Fallback if language module is not available
+        def getTranslation(key, *args):
+            if args:
+                return key.format(*args)
+            return key
 
 # Global variable to track if logger has been initialized
 _logger_initialized = False
@@ -12,8 +26,15 @@ def initialize_logger():
     if _logger_initialized:
         return
     
-    # Configure logging
-    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
+    # Configure logging - determine the log directory based on whether we're in a frozen executable
+    if getattr(sys, 'frozen', False):
+        # If we're running in a PyInstaller bundle, use the directory of the executable
+        application_path = os.path.dirname(sys.executable)
+        log_dir = os.path.join(application_path, "logs")
+    else:
+        # If we're in development environment, use the existing path
+        log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
+    
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
@@ -22,7 +43,7 @@ def initialize_logger():
 
         def format(self, record):
             if record.levelno == logging.DEBUG:  # 只给 DEBUG 级别添加前缀
-                record.msg = f"[开源项目：https://github.com/Ryan0204/cursor-auto-icloud] {record.msg}"
+                record.msg = getTranslation("debug_prefix_format").format(record.msg)
             return super().format(record)
 
     # Clear any existing handlers
@@ -59,7 +80,7 @@ def initialize_logger():
     logging.getLogger().addHandler(console_handler)
 
     # 打印日志目录所在路径
-    logging.info(f"日志记录器已初始化，日志目录: {os.path.abspath(log_dir)}")
+    logging.info(getTranslation("logger_initialized").format(os.path.abspath(log_dir)))
     
     _logger_initialized = True
 
@@ -72,20 +93,20 @@ def main_task():
     Main task execution function. Simulates a workflow and handles errors.
     """
     try:
-        logging.info("Starting the main task...")
+        logging.info(getTranslation("main_task_starting"))
 
         # Simulated task and error condition
         if some_condition():
-            raise ValueError("Simulated error occurred.")
+            raise ValueError(getTranslation("simulated_error"))
 
-        logging.info("Main task completed successfully.")
+        logging.info(getTranslation("main_task_completed"))
 
     except ValueError as ve:
-        logging.error(f"ValueError occurred: {ve}", exc_info=True)
+        logging.error(getTranslation("value_error_occurred").format(ve), exc_info=True)
     except Exception as e:
-        logging.error(f"Unexpected error occurred: {e}", exc_info=True)
+        logging.error(getTranslation("unexpected_error_occurred").format(e), exc_info=True)
     finally:
-        logging.info("Task execution finished.")
+        logging.info(getTranslation("task_execution_finished"))
 
 
 def some_condition():
@@ -98,6 +119,6 @@ def some_condition():
 
 if __name__ == "__main__":
     # Application workflow
-    logging.info("Application started.")
+    logging.info(getTranslation("application_started"))
     main_task()
-    logging.info("Application exited.")
+    logging.info(getTranslation("application_exited"))
