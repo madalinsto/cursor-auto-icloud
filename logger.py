@@ -1,6 +1,5 @@
 """
 This file is kept for backward compatibility.
-The actual implementation has moved to src/utils/logger.py.
 """
 
 import os

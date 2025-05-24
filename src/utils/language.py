@@ -1074,6 +1074,51 @@ class LanguageManager:
                 Language.ENGLISH: "Email is missing anonymousId: {0}",
                 Language.CHINESE: "邮箱缺少匿名ID: {0}"
             },
+            # Logger translations
+            "debug_prefix_format": {
+                Language.ENGLISH: "[Open Source Project: https://github.com/Ryan0204/cursor-auto-icloud] {0}",
+                Language.CHINESE: "[开源项目：https://github.com/Ryan0204/cursor-auto-icloud] {0}"
+            },
+            "logger_initialized": {
+                Language.ENGLISH: "Logger initialized, log directory: {0}",
+                Language.CHINESE: "日志记录器已初始化，日志目录: {0}"
+            },
+            "main_task_starting": {
+                Language.ENGLISH: "Starting the main task...",
+                Language.CHINESE: "开始执行主任务..."
+            },
+            "simulated_error": {
+                Language.ENGLISH: "Simulated error occurred.",
+                Language.CHINESE: "模拟错误发生。"
+            },
+            "main_task_completed": {
+                Language.ENGLISH: "Main task completed successfully.",
+                Language.CHINESE: "主任务成功完成。"
+            },
+            "value_error_occurred": {
+                Language.ENGLISH: "ValueError occurred: {0}",
+                Language.CHINESE: "发生值错误: {0}"
+            },
+            "unexpected_error_occurred": {
+                Language.ENGLISH: "Unexpected error occurred: {0}",
+                Language.CHINESE: "发生意外错误: {0}"
+            },
+            "task_execution_finished": {
+                Language.ENGLISH: "Task execution finished.",
+                Language.CHINESE: "任务执行完成。"
+            },
+            "application_started": {
+                Language.ENGLISH: "Application started.",
+                Language.CHINESE: "应用程序已启动。"
+            },
+            "application_exited": {
+                Language.ENGLISH: "Application exited.",
+                Language.CHINESE: "应用程序已退出。"
+            },
+            "log_directory_location": {
+                Language.ENGLISH: "Log files are saved in: {0}",
+                Language.CHINESE: "日志文件保存在: {0}"
+            },
         }
     
     def get_text(self, key: str, *args) -> str:
