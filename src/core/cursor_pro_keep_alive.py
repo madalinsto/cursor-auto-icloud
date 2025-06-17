@@ -269,7 +269,7 @@ def update_cursor_auth(email=None, access_token=None, refresh_token=None):
     return auth_manager.update_auth(email, access_token, refresh_token)
 
 
-def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler):
+def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler, manual_code):
     """
     Handle the account sign-up process
     
@@ -342,7 +342,10 @@ def sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_na
                 break
             if tab.ele("@data-index=0"):
                 logging.info(getTranslation("getting_verification_code"))
-                code = email_handler.get_verification_code()
+                if not manual_code:
+                    code = email_handler.get_verification_code()
+                else:
+                    code = input(getTranslation("manual_code_input"))
                 if not code:
                     logging.error(getTranslation("verification_code_failed"))
                     return False
@@ -559,7 +562,7 @@ class EmailGenerator:
             with open(emails_file_path, "r") as f:
                 lines = f.readlines()
                 
-            if not lines:                    
+            if not lines:
                 logging.warning(getTranslation("email_list_empty"))
                 sys.exit(1)
                     
@@ -714,7 +717,9 @@ def main():
     login_url = "https://authenticator.cursor.sh"
     sign_up_url = "https://authenticator.cursor.sh/sign-up"
     settings_url = "https://www.cursor.com/settings"
-    
+
+    custom_email = None
+
     try:
         logging.info(getTranslation("program_init"))
         ExitCursor()
@@ -749,6 +754,7 @@ def main():
 
         # Set delete_icloud_email_after_use based on user choice if using iCloud
         delete_icloud_email_after_use = False
+        manual_code = False
         if choice == 4:  # If using iCloud email
             # Ask user if they want to delete the email after use
             delete_prompt = input(getTranslation("delete_email_prompt") + " (Y/N) [Y]: ").strip().upper()
@@ -765,7 +771,12 @@ def main():
             logging.info(getTranslation("reset_complete"))
             print_end_message()
             sys.exit(0)
-            
+
+        elif choice == 2:
+            custom_email = input(getTranslation("custom_email"))
+            manual_code_prompt = input(getTranslation("manual_code_prompt") + " (Y/N) [Y]: ").strip().upper()
+            manual_code = manual_code_prompt != "N"
+
         elif choice == 3:
             # 生成 iCloud 隐藏邮箱
             try:
@@ -830,7 +841,10 @@ def main():
         email_generator = EmailGenerator(use_icloud=use_icloud, delete_after_use=delete_icloud_email_after_use)
         first_name = email_generator.default_first_name
         last_name = email_generator.default_last_name
-        account = email_generator.generate_email()
+        if choice == 2:
+            account = custom_email
+        else:
+            account = email_generator.generate_email()
         password = email_generator.default_password
 
         logging.info(getTranslation("generated_email_account").format(account))
@@ -848,7 +862,7 @@ def main():
         logging.info(getTranslation("visiting_login_page").format(login_url))
         tab.get(login_url)
 
-        if sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler):
+        if sign_up_account(browser, tab, sign_up_url, settings_url, first_name, last_name, account, password, email_handler, manual_code):
             logging.info(getTranslation("getting_session_token"))
             access_token, refresh_token = get_cursor_session_token(tab)
             if access_token and refresh_token:
