@@ -53,8 +53,8 @@ class LanguageManager:
                 Language.CHINESE: "1. 仅重置机器码"
             },
             "complete_registration": {
-                Language.ENGLISH: "2. Complete registration process",
-                Language.CHINESE: "2. 完整注册流程"
+                Language.ENGLISH: "2. Register using an existing iCloud email",
+                Language.CHINESE: "2. 已有 iCloud 邮箱注册"
             },
             "generate_icloud_email": {
                 Language.ENGLISH: "3. Generate iCloud hidden email",
@@ -80,7 +80,11 @@ class LanguageManager:
                 Language.ENGLISH: "Please enter a valid number",
                 Language.CHINESE: "请输入有效的数字"
             },
-            
+            # Custom Email
+            "custom_email":{
+                 Language.ENGLISH: "Please input your iCloud email:",
+                 Language.CHINESE:"请输入 iCloud 邮箱:"
+            },
             # Machine code reset
             "reset_complete": {
                 Language.ENGLISH: "Machine code reset complete",
@@ -1049,6 +1053,14 @@ class LanguageManager:
             "delete_email_prompt": {
                 Language.ENGLISH: "Delete iCloud email after successful registration?",
                 Language.CHINESE: "注册成功后删除 iCloud 邮箱?"
+            },
+            "manual_code_prompt":{
+                Language.ENGLISH: "Enter verification code manually?",
+                Language.CHINESE: "手动输入验证码？"
+            },
+            "manual_code_input":{
+              Language.ENGLISH: "Enter the verification code manually:",
+              Language.CHINESE: "请手动输入验证码："
             },
             "delete_after_use_disabled": {
                 Language.ENGLISH: "Keep email after use option selected",
